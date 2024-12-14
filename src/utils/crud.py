@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import List
 
 from sqlalchemy.orm import Session
 
@@ -44,8 +43,25 @@ def get_model(session: Session, model_id: int) -> AIModel | None:
         print(f'Model with ID {model_id} not found.')
         return None
 
+def get_model_by_model_name(session: Session, model_name: str) -> AIModel | None:
+    """Retrieves a model from the database by its name.
 
-def get_models(session: Session) -> List[AIModel] | None:
+    Args:
+        session (Session): The database session.
+        model_name (int): The name of the model to retrieve.
+
+    Returns:
+        AIModel: The model with the specified ID.
+    """
+    model = session.query(AIModel).filter_by(name=model_name).first()
+    if model:
+        return model
+    else:
+        print(f'Model with name {model_name} not found.')
+        return None
+
+
+def get_models(session: Session) -> list[AIModel] | None:
     """Retrieves a model from the database by its ID.
 
     Args:
@@ -59,7 +75,7 @@ def get_models(session: Session) -> List[AIModel] | None:
     if models:
         return models
     else:
-        print(f'No available AI models')
+        print('No available AI models')
         return None
 
 

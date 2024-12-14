@@ -1,8 +1,7 @@
 from fastapi import FastAPI
 
-from .routers import example
-from .routers import database_example
-from .routers import ai_models
+from .processing import processing
+from .routers import database_example, example, ai_models
 
 app = FastAPI(
     title='renameme',
@@ -13,3 +12,4 @@ app = FastAPI(
 app.include_router(example.router)
 app.include_router(database_example.router)
 app.include_router(ai_models.router)
+app.include_router(processing.router)
