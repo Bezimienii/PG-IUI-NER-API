@@ -1,8 +1,10 @@
+from datetime import datetime
+from typing import List
+
 from sqlalchemy.orm import Session
+
 from ..db.models import AIModel
 
-
-from datetime import datetime
 
 def update_training_status(session: Session, model_id: int, is_training: bool) -> bool:
     """Updates the training status of a model in the database.
@@ -21,8 +23,9 @@ def update_training_status(session: Session, model_id: int, is_training: bool) -
         session.commit()
         return True
     else:
-        print(f"Model with ID {model_id} not found.")
+        print(f'Model with ID {model_id} not found.')
         return False
+
 
 def get_model(session: Session, model_id: int) -> AIModel | None:
     """Retrieves a model from the database by its ID.
@@ -38,8 +41,27 @@ def get_model(session: Session, model_id: int) -> AIModel | None:
     if model:
         return model
     else:
-        print(f"Model with ID {model_id} not found.")
+        print(f'Model with ID {model_id} not found.')
         return None
+
+
+def get_models(session: Session) -> List[AIModel] | None:
+    """Retrieves a model from the database by its ID.
+
+    Args:
+        session (Session): The database session.
+        model_id (int): The ID of the model to retrieve.
+
+    Returns:
+        AIModel: The model with the specified ID.
+    """
+    models = session.query(AIModel).all()
+    if models:
+        return models
+    else:
+        print(f'No available AI models')
+        return None
+
 
 def create_model(session: Session, base_model: str, file_path: str, date_created: datetime) -> AIModel:
     """Creates a new model in the database.
@@ -61,6 +83,7 @@ def create_model(session: Session, base_model: str, file_path: str, date_created
     session.commit()
     return model
 
+
 def delete_model(session: Session, model_id: int) -> bool:
     """Deletes a model from the database.
 
@@ -77,5 +100,5 @@ def delete_model(session: Session, model_id: int) -> bool:
         session.commit()
         return True
     else:
-        print(f"Model with ID {model_id} not found.")
+        print(f'Model with ID {model_id} not found.')
         return False
