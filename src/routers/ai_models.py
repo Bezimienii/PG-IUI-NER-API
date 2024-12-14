@@ -8,6 +8,8 @@ from ..config import settings
 from ..db.db import get_db
 from ..utils.crud import create_model, delete_model, get_model, get_models
 
+from ..model.model import getBaseModel, getTokeniser, classifyText, classifyPolishText
+
 router = APIRouter(prefix='/ai-models', tags=['AI Models'])
 
 
@@ -70,7 +72,7 @@ def get_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
     
 
 @router.post('/{model_id}', summary='Pass input for a model to do NER')
-def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends(get_db)) -> dict:
+def get_ai_model(model_id: str, request: CreateRequestNER, db: Session = Depends(get_db)) -> dict:
     """Pass input for a model to do NER.
 
     Args:
@@ -81,18 +83,21 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
     Returns:
         dict: answer for NER process
     """
-    model = get_model(db, model_id)
-    if not model:
-        raise HTTPException(status_code=404, detail='Model not found')
-    
-    # get input text from json
-     # Access input_text from the request
-    input_text = request.input_text
-    
-    # pass data to model which id is passed by url param
 
-    # processing
-    processed_text = "PROCESSED TEXT"
+    # model = get_model(db, model_id)
+    # if not model:
+    #     raise HTTPException(status_code=404, detail='Model not found')
+    
+    # # get input text from json
+    input_text = request.input_text
+
+    lang = model_id
+
+    model = getBaseModel(lang)
+
+    tokenizer = getTokeniser(lang)
+
+    processed_text = classifyText(model, tokenizer, input_text)
 
     return {"input_text": input_text, "processed_text": processed_text, 'message': 'NER Processing finished successfully', }
     
