@@ -31,7 +31,7 @@ def getTokeniser(lang):
     if lang == "en":
         return AutoTokenizer.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
     elif lang == "pl":
-        return AutoModelForTokenClassification.from_pretrained("pietruszkowiec/herbert-base-ner")
+        return AutoTokenizer.from_pretrained("pietruszkowiec/herbert-base-ner")
     else:
         return AutoTokenizer.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
 
