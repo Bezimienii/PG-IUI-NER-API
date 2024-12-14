@@ -4,7 +4,7 @@ import numpy as np
 import json
 import re
 from nltk.tokenize import sent_tokenize
-from transformers import RobertaForTokenClassification, AutoModelForTokenClassification, AutoTokenizer
+from transformers import RobertaForTokenClassification, AutoModelForTokenClassification, AutoTokenizer, pipeline
 from torch.utils.data import DataLoader
 import torch
 import torch.nn as nn
@@ -34,6 +34,10 @@ def getTokeniser(lang):
         return AutoModelForTokenClassification.from_pretrained("pietruszkowiec/herbert-base-ner")
     else:
         return AutoTokenizer.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
+
+def classifyPolishText(model, tokenizer, input):
+    nlp = pipeline("ner", model=model, tokenizer=tokenizer)
+    return nlp(input)
 
 def classifyText(model, tokenizer, input):
     inputs = tokenizer(
