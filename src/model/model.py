@@ -23,7 +23,7 @@ def getBaseModel(lang):
     if lang == "en":
         return RobertaForTokenClassification.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
     elif lang == "pl":
-        return AutoModelForTokenClassification.from_pretrained("pczarnik/herbert-base-ner")
+        return AutoModelForTokenClassification.from_pretrained("pietruszkowiec/herbert-base-ner")
     else:
         return RobertaForTokenClassification.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
 
@@ -31,9 +31,10 @@ def getTokeniser(lang):
     if lang == "en":
         return AutoTokenizer.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
     elif lang == "pl":
-        return AutoModelForTokenClassification.from_pretrained("pczarnik/herbert-base-ner")
+        return AutoModelForTokenClassification.from_pretrained("pietruszkowiec/herbert-base-ner")
     else:
         return AutoTokenizer.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
+
 def classifyText(model, tokenizer, input):
     inputs = tokenizer(
         input, add_special_tokens=False, return_tensors="pt"
