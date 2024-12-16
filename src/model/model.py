@@ -115,7 +115,7 @@ def train_network(output_path, model, tokenizer, train, val, data_collator, labe
         eval_strategy="epoch",
         save_strategy="epoch",
         load_best_model_at_end=True,
-        push_to_hub=True,
+        push_to_hub=False,
     )
     seqeval = evaluate.load("seqeval")
     compute_metrics = prepare_compute_metrics(label_list, seqeval)
