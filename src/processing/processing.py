@@ -2,6 +2,7 @@ import os
 import uuid
 
 from fastapi import APIRouter, Depends, Form, UploadFile
+from pydantic import BaseModel
 
 from src.db.db import Session, get_db
 from src.model.model import label2id
@@ -14,14 +15,15 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 
 def save_file(file: UploadFile, name: str) -> str:
-    """Save an uploaded file to the UPLOAD_DIR with a new name.
+    """
+    Save an uploaded file to the UPLOAD_DIR with a new name.
 
     Args:
         file (UploadFile): The file to be saved.
         name (str): The new name for the file.
 
     Returns:
-        str: The path of the saved file.
+       file_path (str): The path of the saved file.
     """
     file_extension = os.path.splitext(file.filename)[-1]
     new_filename = f'{name}{file_extension}'
@@ -33,34 +35,47 @@ def save_file(file: UploadFile, name: str) -> str:
     return file_path
 
 
+class Sentence(BaseModel):
+    id: int
+    ner_tags: list[int]
+    tokens: list[str]
+
+    @classmethod
+    def get_empty_sentence(cls) -> "Sentence":
+        """Creates and returns an empty Sentence object."""
+        return cls(id=0, ner_tags=[], tokens=[])
+
+
 def process_input_file(file_path: str):
-    sentences = []
-    current_sentence = {
-        "id": 0,
-        "ner_tags": [],
-        "tokens": [],
-    }
+    """
+    Process input conllu file info the desired format for training.
+
+    Args:
+        file_path (str): The path of the file to be processed.
+
+    Returns:
+        sentences (list[Sentence]): A list of Sentence objects.
+    """
+    sentences: list[Sentence] = []
+    current_sentence: Sentence = Sentence.get_empty_sentence()
 
     with open(file_path, "r", encoding="utf-8") as file:
         for line in file:
             line = line.strip()
             if not line:
-                if current_sentence["tokens"]:
+                if current_sentence.tokens:
+                    current_sentence.id = len(sentences)
                     sentences.append(current_sentence)
-                current_sentence = {
-                    "id": str(len(sentences)),
-                    "ner_tags": [],
-                    "tokens": [],
-                }
+                current_sentence = Sentence.get_empty_sentence()
             else:
                 parts = line.split("\t")
                 if len(parts) == 3:
                     _, token, label = parts
-                    current_sentence["tokens"].append(token)
-                    current_sentence["ner_tags"].append(label2id[label])
+                    current_sentence.tokens.append(token)
+                    current_sentence.ner_tags.append(label2id[label])
 
-
-        if current_sentence["tokens"]:
+        if current_sentence.tokens:
+            current_sentence.id = len(sentences)
             sentences.append(current_sentence)
 
     return sentences
@@ -75,7 +90,8 @@ def train_model(
     test_data: UploadFile = Form(...),
     db: Session = Depends(get_db),
 ):
-    """Initiates the training process for a Named-Entity Recognition (NER) model.
+    """
+    Initiates the training process for a Named-Entity Recognition (NER) model.
 
     Args:
         model_name (str): The name of the model to be trained.
