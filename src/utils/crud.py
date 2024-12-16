@@ -43,6 +43,23 @@ def get_model(session: Session, model_id: int) -> AIModel | None:
         print(f'Model with ID {model_id} not found.')
         return None
 
+def get_model_by_name(session: Session, model_name: str) -> AIModel | None:
+    """Retrieves a model from the database by its name.
+
+    Args:
+        session (Session): The database session.
+        model_name (int): The name of the model to retrieve.
+
+    Returns:
+        AIModel: The model with the specified ID.
+    """
+    model = session.query(AIModel).filter_by(base_model=model_name).first()
+    if model:
+        return model
+    else:
+        print(f'Model with name {model_name} not found.')
+        return None
+
 def get_model_by_model_name(session: Session, model_name: str) -> AIModel | None:
     """Retrieves a model from the database by its name.
 
@@ -91,8 +108,6 @@ def create_model(session: Session, base_model: str, file_path: str, date_created
     Returns:
         AIModel: The created model.
     """
-    # print type of session
-    print(session)
 
     model = AIModel(base_model=base_model, file_path=file_path, date_created=date_created)
     session.add(model)

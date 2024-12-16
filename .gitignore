@@ -19,6 +19,9 @@ pip-delete-this-directory.txt
 models/
 tokenizers/
 
+# Database
+databases/
+
 # Unit test / coverage reports
 htmlcov/
 .tox/

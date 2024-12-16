@@ -1,5 +1,5 @@
 from transformers import AutoTokenizer, AutoModelForTokenClassification
-from ..utils.enum import BaseModels
+from .enum import BaseModels
 from ..config import settings
 
 def load_model_and_tokenizer(model_name: str) -> tuple[AutoTokenizer, AutoModelForTokenClassification]:
@@ -14,10 +14,9 @@ def load_model_and_tokenizer(model_name: str) -> tuple[AutoTokenizer, AutoModelF
     """
     
     model_path = f"{settings.MODEL_PATH}/{model_name}"
-    tokenizer_path = f"{settings.TOKENIZER_PATH}/{model_name}"
 
     try:
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
+        tokenizer = AutoTokenizer.from_pretrained(model_path)
         model = AutoModelForTokenClassification.from_pretrained(model_path)
         print(f"Model {model_name} loaded successfully")
         return model, tokenizer
@@ -25,3 +24,21 @@ def load_model_and_tokenizer(model_name: str) -> tuple[AutoTokenizer, AutoModelF
         print(f"Error loading model: {e}")
         return None, None
     
+def save_model(model, tokenizer, model_name):
+    """
+    Saves a pre-trained model and tokenizer to the specified model name.
+
+    Args:
+        model (AutoModelForTokenClassification): The model to be saved.
+        tokenizer (AutoTokenizer): The tokenizer to be saved.
+        model_name (str): The name of the model to be saved.
+
+    Returns:
+        None
+    """
+    model_path = f"{settings.MODEL_PATH}/{model_name}"
+
+    model.save_pretrained(model_path)
+    tokenizer.save_pretrained(model_path)
+    
+    print(f"Model {model_name} saved successfully")

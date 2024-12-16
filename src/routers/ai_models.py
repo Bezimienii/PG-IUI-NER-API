@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..db.db import get_db
 from ..utils.crud import create_model, delete_model, get_model, get_models
-from ..utils.load_models import load_model_and_tokenizer
+from ..utils.models_utils import load_model_and_tokenizer
 from ..model.model import getBaseModel, getTokeniser, classifyText, classifyPolishText
 from ..utils.enum import BaseModels
 router = APIRouter(prefix='/ai-models', tags=['AI Models'])
@@ -91,15 +91,16 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
     # # get input text from json
     input_text = request.input_text
 
-    if model_id == 1:
-        lang = BaseModels.ROBERTA.value
-    else:
-        lang = BaseModels.HERBERT.value
+    model = get_model(db, model_id)
+    if not model:
+        raise HTTPException(status_code=404, detail='Model not found')
 
-    model, tokenizer = load_model_and_tokenizer(lang)
+    model_name = model.base_model
+
+    model, tokenizer = load_model_and_tokenizer(model_name)
 
     if model == None or tokenizer == None:
-        raise HTTPException(status_code=404, detail=f'Model not found: {lang}')
+        raise HTTPException(status_code=404, detail=f'Model not found: {model_name}')
 
     processed_text = classifyText(model, tokenizer, input_text)
 
