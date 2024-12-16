@@ -4,7 +4,7 @@ import numpy as np
 import json
 import re
 from nltk.tokenize import sent_tokenize
-from transformers import RobertaForTokenClassification, AutoModelForTokenClassification, AutoTokenizer, pipeline
+from transformers import RobertaForTokenClassification, AutoModelForTokenClassification, AutoTokenizer, pipeline, DataCollatorForTokenClassification
 from transformers import TrainingArguments, Trainer
 from torch.utils.data import DataLoader
 import torch
@@ -16,6 +16,9 @@ from sklearn.model_selection import train_test_split
 import evaluate
 import datetime
 import warnings
+from ..db.db import get_db
+from ..utils.crud import create_model, delete_model, get_model, get_models
+from ..processing.processing import process_input_file
 
 MAX_LEN=128 
 TEST_SIZE=0.2
@@ -131,6 +134,13 @@ def train_network(output_path, model, tokenizer, train, val, data_collator, labe
     )
     trainer.train()
 
+def getModelPath(lang):
+    if lang == "en":
+        return "Jean-Baptiste/roberta-large-ner-english"
+    elif lang == "pl":
+        return "pietruszkowiec/herbert-base-ner"
+    else:
+        return "Jean-Baptiste/roberta-large-ner-english"
 
 def getTokeniser(lang):
     if lang == "en":
@@ -139,6 +149,12 @@ def getTokeniser(lang):
         return AutoTokenizer.from_pretrained("pietruszkowiec/herbert-base-ner")
     else:
         return AutoTokenizer.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
+
+def getTokenizerFromPath(path):
+    return AutoTokenizer.from_pretrained(path)
+
+def getModelFromPath(path):
+    return AutoModelForTokenClassification(pretrained_model_name_or_path=path, num_label=9, id2label=id2label, label2id=label2id)
 
 def classifyPolishText(model, tokenizer, input):
     nlp = pipeline("ner", model=model, tokenizer=tokenizer)
@@ -152,3 +168,23 @@ def classifyText(model, tokenizer, input):
         logits = model(**inputs).logits
     predicted_token_class_ids = logits.argmax(-1)
     return [model.config.id2label[t.item()] for t in predicted_token_class_ids[0]]
+
+def train(model_path, output_path, train, val):
+    label_list = list(id2label.values())
+    model = getModelFromPath(model_path)
+    tokenizer = getTokenizerFromPath(model_path)
+    pre_train = preprocess_data(tokenizer, train)
+    pre_val = preprocess_data(tokenizer, val)
+    data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
+    train_network(output_path, model, tokenizer, pre_train, pre_val, data_collator, label_list)
+
+def execute_training(id):
+    db = get_db()
+    model_info = get_model(db, id)
+    model_path = model_info.base_model
+    output_path = "../models/"+ model_info.file_path
+    train_path = "../trainInfo/"+model_info.file_path+"/train.conllu"
+    val_path = "../trainInfo/"+model_info.file_path+"/val.conllu"
+    train_data = process_input_file(train_path)
+    val_data = process_input_file(val_path)
+    train(model_path, output_path, train_data, val_data)
