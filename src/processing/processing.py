@@ -1,74 +1,23 @@
 import os
 import uuid
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, Form, UploadFile
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from src.db.db import Session, get_db
-from src.model.model import label2id
-from multiprocessing import Process
+from src.model.model import getBaseModel, getTokeniser, convert_2_dataframe, split_data, dataset_2_list, form_input, \
+    train_engine
+from src.utils.crud import get_model_by_model_name
+from torch.utils.data import DataLoader
 
 router = APIRouter(prefix='/api/processing', tags=['processing'])
 
-# UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../files'))
-UPLOAD_DIR = '/tmp/files'
-os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-
-def save_file(file: UploadFile, name: str) -> str:
-    """Save an uploaded file to the UPLOAD_DIR with a new name.
-
-    Args:
-        file (UploadFile): The file to be saved.
-        name (str): The new name for the file.
-
-    Returns:
-        str: The path of the saved file.
-    """
-    file_extension = os.path.splitext(file.filename)[-1]
-    new_filename = f'{name}{file_extension}'
-    file_path = os.path.join(UPLOAD_DIR, new_filename)
-
-    with open(file_path, 'wb') as buffer:
-        buffer.write(file.file.read())
-
-    return file_path
-
-
-def process_input_file(file_path: str):
-    sentences = []
-    current_sentence = {
-        "id": 0,
-        "ner_tags": [],
-        "tokens": [],
-    }
-
-    with open(file_path, "r", encoding="utf-8") as file:
-        for line in file:
-            line = line.strip()
-            if not line:
-                if current_sentence["tokens"]:
-                    sentences.append(current_sentence)
-                current_sentence = {
-                    "id": str(len(sentences)),
-                    "ner_tags": [],
-                    "tokens": [],
-                }
-            else:
-                parts = line.split("\t")
-                if len(parts) == 3:
-                    _, token, label = parts
-                    current_sentence["tokens"].append(token)
-                    current_sentence["ner_tags"].append(label2id[label])
-
-
-        if current_sentence["tokens"]:
-            sentences.append(current_sentence)
-
-    return sentences
-
-
-def train_model_simulation(testdata: str):
-    print("Training model simulation with data: " + testdata)
+class TrainingRequest(BaseModel):
+    model_name: str
+    model_language: str
+    data: list
 
 
 @router.post('/', summary='Train a model')
@@ -102,8 +51,6 @@ def train_model(
     test_path = save_file(test_data, f'test_{files_uuid}')
 
     training_id = uuid.uuid4()
-
-    # create subprocess
     train_process = Process(target=train_model_simulation, args=("Example data",))
     train_process.start()
 
@@ -185,6 +132,18 @@ def train_model(
     # )
 
     # TODO: save model
+
+    model = create_model(
+        session=db,
+        base_model=model_language,
+        file_path=model_name,
+        is_training=True,
+        is_trained=False,
+        date_created=datetime.now(),
+    )
+
+    # id of created model for future usage
+    model_id = model.id
 
     return {
         'message': 'Successfully started training model.',

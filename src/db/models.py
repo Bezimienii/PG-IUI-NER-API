@@ -32,4 +32,4 @@ class AIModel(Base):
         Returns:
             str: A string representation of the AIModel object.
         """
-        return f'<AIModel(id={self.id}, base_model={self.base_model}, file_path={self.file_path}, date_created={self.date_created}, is_training={self.is_training}, version={self.version})>'
+        return f'<AIModel(id={self.id}, base_model={self.base_model}, file_path={self.file_path}, date_created={self.date_created}, is_training={self.is_training}, is_trained={self.is_trained} version={self.version})>'
