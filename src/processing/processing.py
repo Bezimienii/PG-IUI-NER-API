@@ -5,7 +5,10 @@ from fastapi import APIRouter, Depends, Form, UploadFile
 from pydantic import BaseModel
 
 from src.db.db import Session, get_db
-from src.model.model import label2id
+
+
+from ..utils.crud import create_model
+import datetime
 
 router = APIRouter(prefix='/api/processing', tags=['processing'])
 
@@ -13,6 +16,17 @@ router = APIRouter(prefix='/api/processing', tags=['processing'])
 UPLOAD_DIR = '/tmp/files'
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+label2id = {
+    "O": 0,
+    "B-PER": 1,
+    "I-PER": 2,
+    "B-ORG": 3,
+    "I-ORG": 4,
+    "B-LOC": 5,
+    "I-LOC": 6,
+    "B-MISC": 7,
+    "I-MISC": 8,
+}
 
 def save_file(file: UploadFile, name: str) -> str:
     """Save an uploaded file to the UPLOAD_DIR with a new name.
@@ -235,5 +249,17 @@ def train_model(
     # )
 
     # TODO: save model
+
+    model = create_model(
+        session=db,
+        base_model=model_language,
+        file_path=model_name,
+        is_training=True,
+        is_trained=False,
+        date_created=datetime.now(),
+    )
+
+    # id of created model for future usage
+    model_id = model.id
 
     return {'message': 'Successfully started training model.', 'model_name': model_name, 'training_id': training_id}

@@ -4,7 +4,8 @@ import numpy as np
 import json
 import re
 from nltk.tokenize import sent_tokenize
-from transformers import RobertaForTokenClassification, AutoModelForTokenClassification, AutoTokenizer, pipeline, DataCollatorForTokenClassification
+from transformers import RobertaForTokenClassification, AutoModelForTokenClassification, AutoTokenizer, pipeline, \
+    DataCollatorForTokenClassification, PretrainedConfig
 from transformers import TrainingArguments, Trainer
 from torch.utils.data import DataLoader
 import torch
@@ -16,7 +17,7 @@ from sklearn.model_selection import train_test_split
 import evaluate
 import datetime
 import warnings
-from ..db.db import get_db
+from ..db.db import get_db, Session
 from ..utils.crud import create_model, delete_model, get_model, get_models
 from ..processing.processing import process_input_file
 
@@ -63,28 +64,32 @@ def getBaseModelForTraining(lang):
     else:
         return RobertaForTokenClassification.from_pretrained("Jean-Baptiste/roberta-large-ner-english")
 
-def tokenize_and_align_labels(tokenizer, examples):
-    tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
-    labels = []
-    for i, label in enumerate(examples[f"ner_tags"]):
-        word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
-        previous_word_idx = None
-        label_ids = []
-        for word_idx in word_ids:  # Set the special tokens to -100.
-            if word_idx is None:
-                label_ids.append(-100)
-            elif word_idx != previous_word_idx:  # Only label the first token of a given word.
-                label_ids.append(label[word_idx])
-            else:
-                label_ids.append(-100)
-            previous_word_idx = word_idx
-        labels.append(label_ids)
-    tokenized_inputs["labels"] = labels
+def prepare_tokenization(tokenizer):
+    def tokenize_and_align_labels(examples):
+        tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
+        labels = []
+        for i, label in enumerate(examples["ner_tags"]):
+            word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
+            print(word_ids)
+            previous_word_idx = None
+            label_ids = []
+            for word_idx in word_ids:  # Set the special tokens to -100.
+                if word_idx is None:
+                    label_ids.append(-100)
+                elif word_idx != previous_word_idx:  # Only label the first token of a given word.
+                    label_ids.append(label[word_idx])
+                else:
+                    label_ids.append(-100)
+                previous_word_idx = word_idx
+            labels.append(label_ids)
+        tokenized_inputs["labels"] = labels
 
-    return tokenized_inputs
+        return tokenized_inputs
+    return tokenize_and_align_labels
 
 def preprocess_data(tokenizer, data):
-    return map(lambda x: tokenize_and_align_labels(tokenizer, x), data)
+    tokenize_func = prepare_tokenization(tokenizer)
+    return list(map(lambda x: tokenize_func(x), data))
 
 def prepare_compute_metrics(label_list, seqeval):
     def compute_metrics(p):
@@ -154,7 +159,11 @@ def getTokenizerFromPath(path):
     return AutoTokenizer.from_pretrained(path)
 
 def getModelFromPath(path):
-    return AutoModelForTokenClassification(pretrained_model_name_or_path=path, num_label=9, id2label=id2label, label2id=label2id)
+    print(path)
+    #config = PretrainedConfig(num_labels=9)
+    print(id2label)
+    print(label2id)
+    return AutoModelForTokenClassification.from_pretrained(path, num_labels=9, id2label=id2label, label2id=label2id)
 
 def classifyPolishText(model, tokenizer, input):
     nlp = pipeline("ner", model=model, tokenizer=tokenizer)
@@ -171,20 +180,27 @@ def classifyText(model, tokenizer, input):
 
 def train(model_path, output_path, train, val):
     label_list = list(id2label.values())
-    model = getModelFromPath(model_path)
+    model_name = getModelFromPath(model_path)
+    #model = getModelFromPath(model_name)
     tokenizer = getTokenizerFromPath(model_path)
     pre_train = preprocess_data(tokenizer, train)
     pre_val = preprocess_data(tokenizer, val)
     data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
-    train_network(output_path, model, tokenizer, pre_train, pre_val, data_collator, label_list)
+    print(train[0])
+    print(val[10])
+    #train_network(output_path, model, tokenizer, pre_train, pre_val, data_collator, label_list)
 
 def execute_training(id):
-    db = get_db()
-    model_info = get_model(db, id)
+    with Session() as db:
+        model_info = get_model(db, id)
     model_path = model_info.base_model
-    output_path = "../models/"+ model_info.file_path
-    train_path = "../trainInfo/"+model_info.file_path+"/train.conllu"
-    val_path = "../trainInfo/"+model_info.file_path+"/val.conllu"
+    output_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../models/"+ model_info.file_path)
+    train_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../trainInfo/model1/train.conllu")
+    val_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../trainInfo/model1/val.conllu")
     train_data = process_input_file(train_path)
     val_data = process_input_file(val_path)
-    train(model_path, output_path, train_data, val_data)
+    print(train_data[0])
+    print(len(train_data))
+    print(len(val_data))
+    print(val_data[1])
+    train(model_path, output_path, train_data[0:5000], val_data[0:500])
