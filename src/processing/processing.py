@@ -4,8 +4,21 @@ import uuid
 from fastapi import APIRouter, Depends, Form, UploadFile
 from pydantic import BaseModel
 
-from src.db.db import Session, get_db
-from src.model.model import label2id
+from ..db.db import Session, get_db
+
+# from ..model.model import label2id
+
+label2id = {
+    "O": 0,
+    "B-PER": 1,
+    "I-PER": 2,
+    "B-ORG": 3,
+    "I-ORG": 4,
+    "B-LOC": 5,
+    "I-LOC": 6,
+    "B-MISC": 7,
+    "I-MISC": 8,
+}
 
 router = APIRouter(prefix='/api/processing', tags=['processing'])
 
