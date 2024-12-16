@@ -58,6 +58,14 @@ class Sentence(BaseModel):
         """Creates and returns an empty Sentence object."""
         return cls(id=0, ner_tags=[], tokens=[])
 
+    def to_dict(self) -> dict:
+        """Converts the Sentence object into a simple dictionary."""
+        return {
+            "id": self.id,
+            "ner_tags": self.ner_tags,
+            "tokens": self.tokens,
+        }
+
 
 # def process_input_file(file_path: str):
 #     """Process input conllu file info the desired format for training.
@@ -140,7 +148,7 @@ def process_input_file(file_path: str):
         )
         merged_sentences.append(merged_sentence)
 
-    return merged_sentences
+    return [sentence.to_dict() for sentence in merged_sentences]
 
 
 @router.post('/', summary='Train a model')
