@@ -18,6 +18,7 @@ pip-delete-this-directory.txt
 # Downloaded models and tokenizers
 models/
 tokenizers/
+results/
 
 # Database
 databases/
