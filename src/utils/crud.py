@@ -97,7 +97,7 @@ def get_models(session: Session) -> list[AIModel] | None:
         return None
 
 
-def create_model(session: Session, base_model: str, file_path: str, date_created: datetime, is_training: bool, is_trained: bool) -> AIModel:
+def create_model(session: Session, base_model: str, file_path: str, date_created: datetime, is_training: bool = False, is_trained: bool = False) -> AIModel:
     """Creates a new model in the database.
 
     Args:
