@@ -5,7 +5,7 @@ import json
 import re
 from nltk.tokenize import sent_tokenize
 from transformers import RobertaForTokenClassification, AutoModelForTokenClassification, AutoTokenizer, pipeline, \
-    DataCollatorForTokenClassification, PretrainedConfig
+    DataCollatorForTokenClassification, PretrainedConfig, RobertaConfig
 from transformers import TrainingArguments, Trainer
 from torch.utils.data import DataLoader
 import torch
@@ -133,9 +133,7 @@ def train_network(output_path, model, tokenizer, train, val, data_collator, labe
         args=training_args,
         train_dataset=train,
         eval_dataset=val,
-        processing_class=tokenizer,
-        data_collator=data_collator,
-        compute_metrics=compute_metrics,
+        tokenizer=tokenizer,
     )
     trainer.train()
 
@@ -160,10 +158,11 @@ def getTokenizerFromPath(path):
 
 def getModelFromPath(path):
     print(path)
-    #config = PretrainedConfig(num_labels=9)
+    #config = RobertaConfig()
     print(id2label)
     print(label2id)
-    return AutoModelForTokenClassification.from_pretrained(path, num_labels=9, id2label=id2label, label2id=label2id)
+    return AutoModelForTokenClassification.from_pretrained(path, num_labels=9, id2label=id2label, label2id=label2id,
+                                                           ignore_mismatched_sizes=True)
 
 def classifyPolishText(model, tokenizer, input):
     nlp = pipeline("ner", model=model, tokenizer=tokenizer)
@@ -181,14 +180,14 @@ def classifyText(model, tokenizer, input):
 def train(model_path, output_path, train, val):
     label_list = list(id2label.values())
     model_name = getModelFromPath(model_path)
-    #model = getModelFromPath(model_name)
+    model = getModelFromPath(model_name)
     tokenizer = getTokenizerFromPath(model_path)
     pre_train = preprocess_data(tokenizer, train)
     pre_val = preprocess_data(tokenizer, val)
     data_collator = DataCollatorForTokenClassification(tokenizer=tokenizer)
     print(train[0])
     print(val[10])
-    #train_network(output_path, model, tokenizer, pre_train, pre_val, data_collator, label_list)
+    train_network(output_path, model, tokenizer, pre_train, pre_val, data_collator, label_list)
 
 def execute_training(id):
     with Session() as db:

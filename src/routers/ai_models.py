@@ -8,7 +8,7 @@ from ..config import settings
 from ..db.db import get_db
 from ..utils.crud import create_model, delete_model, get_model, get_models, get_model_by_name
 from ..utils.models_utils import load_model_and_tokenizer, save_model
-from ..model.model import getBaseModel, getTokeniser, classifyText, classifyPolishText
+from ..model.model import getBaseModel, getTokeniser, classifyText, classifyPolishText, execute_training
 from ..utils.enum import BaseModels
 from ..utils.model_training_example import fine_tune_model
 from pydantic import BaseModel, Field
@@ -231,3 +231,7 @@ def delete_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
         return {'message': f'Model {model.base_model} deleted successfully'}
     else:
         raise HTTPException(status_code=404, detail='Model not found')
+
+@router.put('/{model_id}', summary='Zaczynamy show')
+def execute_model(model_id: int):
+    execute_training(model_id)

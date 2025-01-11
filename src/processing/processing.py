@@ -8,7 +8,7 @@ from src.db.db import Session, get_db
 
 
 from ..utils.crud import create_model
-import datetime
+from datetime import datetime
 
 router = APIRouter(prefix='/api/processing', tags=['processing'])
 
@@ -42,6 +42,7 @@ def save_file(file: UploadFile, name: str) -> str:
     new_filename = f'{name}{file_extension}'
     file_path = os.path.join(UPLOAD_DIR, new_filename)
 
+    print(file_path)
     with open(file_path, 'wb') as buffer:
         buffer.write(file.file.read())
 
