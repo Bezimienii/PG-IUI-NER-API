@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from ..db.models import AIModel
 
 
-def update_training_status(session: Session, model_id: int, is_training: bool) -> bool:
+def update_training_status(session: Session, model_id: int, is_training: bool, is_trained) -> AIModel | None:
     """Updates the training status of a model in the database.
 
     Args:
@@ -16,14 +16,15 @@ def update_training_status(session: Session, model_id: int, is_training: bool) -
     Returns:
         None
     """
-    model = session.query(AIModel).filter_by(id=model_id).first()
+    model = get_model(session, model_id)
     if model:
         model.is_training = is_training
+        model.is_trained = is_trained
         session.commit()
-        return True
+        return model
     else:
         print(f'Model with ID {model_id} not found.')
-        return False
+        return None
 
 
 def get_model(session: Session, model_id: int) -> AIModel | None:
@@ -41,6 +42,23 @@ def get_model(session: Session, model_id: int) -> AIModel | None:
         return model
     else:
         print(f'Model with ID {model_id} not found.')
+        return None
+
+def get_model_by_name(session: Session, model_name: str) -> AIModel | None:
+    """Retrieves a model from the database by its name.
+
+    Args:
+        session (Session): The database session.
+        model_name (int): The name of the model to retrieve.
+
+    Returns:
+        AIModel: The model with the specified ID.
+    """
+    model = session.query(AIModel).filter_by(base_model=model_name).first()
+    if model:
+        return model
+    else:
+        print(f'Model with name {model_name} not found.')
         return None
 
 def get_model_by_model_name(session: Session, model_name: str) -> AIModel | None:
@@ -79,7 +97,7 @@ def get_models(session: Session) -> list[AIModel] | None:
         return None
 
 
-def create_model(session: Session, base_model: str, file_path: str, date_created: datetime) -> AIModel:
+def create_model(session: Session, base_model: str, file_path: str, date_created: datetime, is_training: bool, is_trained: bool) -> AIModel:
     """Creates a new model in the database.
 
     Args:
@@ -91,10 +109,8 @@ def create_model(session: Session, base_model: str, file_path: str, date_created
     Returns:
         AIModel: The created model.
     """
-    # print type of session
-    print(session)
 
-    model = AIModel(base_model=base_model, file_path=file_path, date_created=date_created)
+    model = AIModel(base_model=base_model, file_path=file_path, date_created=date_created, is_training=is_training, is_trained=is_trained)
     session.add(model)
     session.commit()
     return model

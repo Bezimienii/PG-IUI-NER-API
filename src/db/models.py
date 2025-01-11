@@ -12,7 +12,7 @@ class AIModel(Base):
     file_path: Mapped[str] = mapped_column(String(255), nullable=False)
     date_created: Mapped[str] = mapped_column(DATE, nullable=False)
     is_training: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    is_trained: Mapped[bool] = mapped_column(Boolean, nullable=True, default=None)
+    is_trained: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     version: Mapped[str] = mapped_column(Integer, nullable=False, default=1)
 
     def generate_name(self, extension: str) -> str:
@@ -32,4 +32,4 @@ class AIModel(Base):
         Returns:
             str: A string representation of the AIModel object.
         """
-        return f'<AIModel(id={self.id}, base_model={self.base_model}, file_path={self.file_path}, date_created={self.date_created}, is_training={self.is_training}, version={self.version})>'
+        return f'<AIModel(id={self.id}, base_model={self.base_model}, file_path={self.file_path}, date_created={self.date_created}, is_training={self.is_training}, is_trained={self.is_trained} version={self.version})>'

@@ -4,10 +4,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
-    DATABASE_URL : str ="sqlite:///./databases/models.db"
+    DATABASE_URL : str ="sqlite:///./src/databases/models.db"
     TOKENIZER_PATH : str ="./src/tokenizers"
     MODEL_PATH : str ="./src/models"
-    DEBUG : bool = False
+    DEBUG : bool = True
     # Base models 
     ROBERTA : str = "Jean-Baptiste/roberta-large-ner-english"
     HERBERT : str ="pietruszkowiec/herbert-base-ner"
