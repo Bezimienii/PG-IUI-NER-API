@@ -36,3 +36,31 @@ def start_training(model_id: int, db: Session = Depends(get_db)) -> dict:
         return {"is_trained": model.is_trained}
     else:
         raise HTTPException(status_code=404, detail='Model not found')
+    
+
+@router.get('/change-status/{model_id}')
+def start_training(model_id: int, db: Session = Depends(get_db)) -> dict:
+
+    # idea is to make a function for changing status 
+
+    model = create_model(
+        session=db,
+        base_model="model_language",
+        file_path="model_name",
+        is_training=True,
+        is_trained=False,
+        date_created=datetime.now(),
+    )
+
+    model_id = model.id
+
+    new_model = update_training_status(db, model_id, is_training=False, is_trained=True)
+
+    updated_model = get_model(db, model_id)
+    print(updated_model)
+
+
+    if model:
+        return {"is_trained": model.is_trained}
+    else:
+        raise HTTPException(status_code=404, detail='Model not found')
