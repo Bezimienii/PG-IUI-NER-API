@@ -18,8 +18,8 @@ import evaluate
 import datetime
 import warnings
 from ..db.db import get_db, Session
-from ..utils.crud import create_model, delete_model, get_model, get_models
-from ..processing.processing import process_input_file
+from ..processing.process_input_file import process_input_file
+from ..utils.crud import create_model, delete_model, get_model, get_models, update_training_process_id
 
 MAX_LEN=128 
 TEST_SIZE=0.2
@@ -193,17 +193,16 @@ def execute_training(model_id):
     training_process_id = os.getpid()
 
     with Session() as db:
-        # update_training_process_id(db, model_id, training_process_id)
+        update_training_process_id(db, model_id, training_process_id)
         model_info = get_model(db, model_id)
 
-    model_path = model_info.base_model
-    output_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../models/"+ model_info.file_path)
+    base_model_path = model_info.base_model
+    output_model_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../models/"+ model_info.file_path) # instead of file_path it should be something with model_name ???
+
     train_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../trainInfo/model1/train.conllu")
     val_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../trainInfo/model1/val.conllu")
+
     train_data = process_input_file(train_path)
     val_data = process_input_file(val_path)
-    print(train_data[0])
-    print(len(train_data))
-    print(len(val_data))
-    print(val_data[1])
-    train(model_path, output_path, train_data[0:5000], val_data[0:500])
+
+    train(base_model_path, output_model_path, train_data[0:5000], val_data[0:500])

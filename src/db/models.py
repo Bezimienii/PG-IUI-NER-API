@@ -12,6 +12,11 @@ class AIModel(Base):
     file_path: Mapped[str] = mapped_column(String(255), nullable=False)
     date_created: Mapped[str] = mapped_column(DATE, nullable=False)
     is_training: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    model_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    train_file_path: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    valid_file_path: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    test_file_path: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    training_process_id: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_trained: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     version: Mapped[str] = mapped_column(Integer, nullable=False, default=1)
 
