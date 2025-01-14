@@ -189,9 +189,13 @@ def train(model_path, output_path, train, val):
     print(val[10])
     train_network(output_path, model, tokenizer, pre_train, pre_val, data_collator, label_list)
 
-def execute_training(id):
+def execute_training(model_id):
+    training_process_id = os.getpid()
+
     with Session() as db:
-        model_info = get_model(db, id)
+        # update_training_process_id(db, model_id, training_process_id)
+        model_info = get_model(db, model_id)
+
     model_path = model_info.base_model
     output_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../models/"+ model_info.file_path)
     train_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "../trainInfo/model1/train.conllu")

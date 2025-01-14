@@ -26,6 +26,26 @@ def update_training_status(session: Session, model_id: int, is_training: bool, i
         print(f'Model with ID {model_id} not found.')
         return None
 
+# def update_training_process_id(session: Session, model_id: int, training_process_id: int) -> AIModel | None:
+#     """Updates the training process id of a model in the database.
+#
+#     Args:
+#         session (Session): The database session.
+#         model_id (int): The ID of the model to update.
+#         training_process_id (int): The new training process id.
+#
+#     Returns:
+#         None
+#     """
+#     model = get_model(session, model_id)
+#     if model:
+#         model.training_process_id = training_process_id
+#         session.commit()
+#         return model
+#     else:
+#         print(f'Model with ID {model_id} not found.')
+#         return None
+
 
 def get_model(session: Session, model_id: int) -> AIModel | None:
     """Retrieves a model from the database by its ID.
