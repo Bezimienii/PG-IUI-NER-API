@@ -13,6 +13,9 @@ from ..utils.enum import BaseModels
 from ..utils.model_training_example import fine_tune_model
 from pydantic import BaseModel, Field
 from typing import List, Dict
+from transformers import pipeline
+import numpy as np
+import json
 
 router = APIRouter(prefix='/ai-models', tags=['AI Models'])
 
@@ -71,10 +74,6 @@ def fine_tune_ai_model(model_id: int, request: FineTuneRequestNER, db: Session =
     Returns:
         dict: Success message confirming fine-tuning.
     """
-    
-    # ONLY WORKS IF ID IS 1
-    if model_id != 1:
-        raise HTTPException(status_code=400, detail='Only works with RoBERTa')
 
     # Get the model from the database (if it exists)
     model_record = get_model(db, model_id)
@@ -88,18 +87,10 @@ def fine_tune_ai_model(model_id: int, request: FineTuneRequestNER, db: Session =
     model, tokenizer = load_model_and_tokenizer(model_name)
     if model is None or tokenizer is None:
         raise HTTPException(status_code=404, detail=f'Model not found: {model_name}')
-    
-    id2label = {
-        0: "O",
-        1: "PER",
-        2: "ORG",
-        3: "LOC",
-        4: "MISC"
-    }
 
     # Fine-tune the model with new data
     try:
-        new_model = fine_tune_model(request.fine_tune_data["texts"], request.fine_tune_data["labels"], id2label, model, tokenizer)
+        new_model = fine_tune_model(request.fine_tune_data["texts"], request.fine_tune_data["labels"], model, tokenizer)
         # Save the fine-tuned model and tokenizer
         model_new_name = request.name
 
@@ -151,6 +142,11 @@ def get_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
         raise HTTPException(status_code=404, detail='Model not found')
     
 
+def float32_to_float(obj):
+    if isinstance(obj, np.float32):
+        return float(obj)
+    return obj
+
 @router.post('/{model_id}', summary='Pass input for a model to do NER')
 def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends(get_db)) -> dict:
     """Pass input for a model to do NER.
@@ -182,9 +178,17 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
     if model == None or tokenizer == None:
         raise HTTPException(status_code=404, detail=f'Model not found: {model_name}')
 
-    processed_text = classifyText(model, tokenizer, input_text)
-
-    return {"input_text": input_text, "processed_text": processed_text, 'message': 'NER Processing finished successfully', }
+    # if model_id == 1:
+    nlp = pipeline('ner', model=model, tokenizer=tokenizer, aggregation_strategy="simple")
+    processed_text = nlp(input_text)
+    # else:
+    #     processed_text = classifyText(model, tokenizer, input_text)
+    try:
+        processed_text_json = [ {key: float(value) if isinstance(value, np.float32) else value for key, value in item.items()} for item in processed_text ]
+        return {'words': processed_text_json}
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON input"}
+    # return {"input_text": input_text,'message': 'NER Processing finished successfully', }
     
 
 @router.get('/', summary='Get all AI models')

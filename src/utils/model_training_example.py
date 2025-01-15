@@ -1,83 +1,66 @@
-# Define the align_target function
-def align_target(labels, word_ids):
-    """
-    Aligns the target labels with the subword tokenization.
-    
-    Args:
-        labels (list): List of integer labels corresponding to words.
-        word_ids (list): List of word IDs from tokenization.
-    
-    Returns:
-        list: Aligned labels for each token.
-    """
-    align_labels = []  # Store aligned labels
-    last_word = None   # Track the last word ID
-
-    for word in word_ids:
-        if word is None:  # Special tokens like [CLS] and [SEP]
-            label = -100  # Ignore labels for these tokens
-        elif word != last_word:  # If it's a new word
-            label = labels[word]  # Assign the label corresponding to the word
-        else:
-            label = labels[word]  # For subwords, keep the same label
-
-        align_labels.append(label)  # Add to aligned labels
-        last_word = word  # Update the last word ID
-
-    return align_labels
-
-
-# Fine-tune model function
-from transformers import Trainer, TrainingArguments
+from transformers import PreTrainedModel, PreTrainedTokenizer, TrainingArguments, Trainer
 from datasets import Dataset
+from transformers import DataCollatorForTokenClassification
 
-def fine_tune_model(train_texts, train_labels, id2label, model, tokenizer):
+def fine_tune_model(train_texts, train_labels, model: PreTrainedModel, tokenizer: PreTrainedTokenizer):
     """
     Fine-tunes a token classification model without IOB format.
 
     Args:
         train_texts (list): List of training sentences (tokenized words).
         train_labels (list): List of training labels (integer IDs).
-        id2label (dict): Mapping from label IDs to label names.
         model (PreTrainedModel): Initialized Hugging Face model.
         tokenizer (PreTrainedTokenizer): Initialized tokenizer corresponding to the model.
 
     Returns:
         model: The fine-tuned model.
     """
-    # Ensure id2label is passed to the model config
-    model.config.id2label = id2label
-    model.config.label2id = {v: k for k, v in id2label.items()}
+    id2label = {0: 'O', 1: 'B-PER', 2: 'I-PER', 3: 'B-ORG', 4: 'I-ORG', 
+                5: 'B-LOC', 6: 'I-LOC', 7: 'B-MISC', 8: 'I-MISC'}
+    label2id = {v: k for k, v in id2label.items()}
 
     # Tokenize and align labels
-    def tokenize_and_align_labels(texts, labels):
-        tokenized_inputs = tokenizer(texts, truncation=True, padding=True, is_split_into_words=True)
-        aligned_labels = []
-        for i, label in enumerate(labels):
+    def tokenize_and_align_labels(examples):
+        tokenized_inputs = tokenizer(examples["tokens"], truncation=True, padding="max_length", max_length=512, is_split_into_words=True)
+        labels = []
+
+        for i, label in enumerate(examples['labels']):
             word_ids = tokenized_inputs.word_ids(batch_index=i)
-            aligned_labels.append(align_target(label, word_ids))
-        tokenized_inputs["labels"] = aligned_labels
+            previous_word_idx = None
+            label_ids = []
+            
+            for word_idx in word_ids:
+                if word_idx is None:
+                    label_ids.append(-100)
+                elif word_idx != previous_word_idx:
+                    label_ids.append(label[word_idx])
+                else:
+                    label_ids.append(-100)
+                previous_word_idx = word_idx
+            labels.append(label_ids)
+        
+        tokenized_inputs["labels"] = labels
         return tokenized_inputs
 
     # Prepare dataset
     dataset = Dataset.from_dict({"tokens": train_texts, "labels": train_labels})
     tokenized_datasets = dataset.map(
-        lambda x: tokenize_and_align_labels(x["tokens"], x["labels"]), batched=True
+        lambda x: tokenize_and_align_labels(x), batched=True
     )
-
-    # Training arguments
+    
     training_args = TrainingArguments(
-        output_dir="./results/fine_tune",
-        learning_rate=2e-3,
-        per_device_train_batch_size=8,
+        output_dir='models/tmp',
+        save_strategy="no",
+        learning_rate=2e-5,
+        per_device_train_batch_size=4,
+        per_device_eval_batch_size=4,
         num_train_epochs=3,
         weight_decay=0.01,
-        logging_dir="./logs",
-        logging_steps=10,
-        evaluation_strategy="no"
+        do_eval=False,
+        eval_strategy='no'
     )
 
-    # Trainer
+    # Initialize Trainer with data collator instead of directly passing tokenizer
     trainer = Trainer(
         model=model,
         args=training_args,
@@ -85,7 +68,6 @@ def fine_tune_model(train_texts, train_labels, id2label, model, tokenizer):
         tokenizer=tokenizer,
     )
 
-    # Train the model
     trainer.train()
-    print("Model fine-tuning completed!")
+
     return model

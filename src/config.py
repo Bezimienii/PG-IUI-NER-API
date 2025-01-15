@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     MODEL_PATH : str ="./src/models"
     DEBUG : bool = True
     # Base models 
-    ROBERTA : str = "Jean-Baptiste/roberta-large-ner-english"
-    HERBERT : str ="pietruszkowiec/herbert-base-ner"
+    ENG_MODEL : str = "Birband/roberta_ner_eng"
+    PL_MODEL : str ="Birband/roberta_ner_pl"
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
 settings = Settings()
