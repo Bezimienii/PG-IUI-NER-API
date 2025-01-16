@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Settings(BaseSettings):
-    DATABASE_URL : str ="sqlite:///./src/databases/models.db"
-    TOKENIZER_PATH : str ="./src/tokenizers"
-    MODEL_PATH : str ="./src/models"
+    DATABASE_URL : str ="sqlite:///databases/models.db"
+    TOKENIZER_PATH : str ="models"
+    MODEL_PATH : str ="models"
     DEBUG : bool = True
     # Base models 
     ENG_MODEL : str = "Birband/roberta_ner_eng"

@@ -8,9 +8,8 @@ from ..config import settings
 from ..db.db import get_db
 from ..utils.crud import create_model, delete_model, get_model, get_models, get_model_by_name
 from ..utils.models_utils import load_model_and_tokenizer, save_model
-from ..model.model import getBaseModel, getTokeniser, classifyText, classifyPolishText, execute_training
+from ..model.training import execute_training
 from ..utils.enum import BaseModels
-from ..utils.model_training_example import fine_tune_model
 from pydantic import BaseModel, Field
 from typing import List, Dict
 from transformers import pipeline
@@ -51,70 +50,6 @@ def create_ai_model(request: CreateRequest, db: Session = Depends(get_db)) -> di
         date_created=datetime.now(),
     )
     return {'id': new_model.id, 'message': 'AI Model created successfully'}
-
-# ---------------------------------------------- EXAMPLE TRAINING -----------------------------------------------
-
-class FineTuneRequestNER(BaseModel):
-    name: str = Field(..., description="Name of the model")  # Required: Name of the model
-    fine_tune_data: Dict[str, List[List]] = Field(
-        ..., 
-        description="Fine-tuning data including texts and labels"
-    )
-
-@router.post('/example_train/{model_id}', summary='Learning example')
-def fine_tune_ai_model(model_id: int, request: FineTuneRequestNER, db: Session = Depends(get_db)) -> dict:
-    """
-    Fine-tunes the specified AI model with new NER data.
-
-    Args:
-        model_id (int): The ID of the AI model to fine-tune.
-        request (FineTuneRequestNER): New fine-tuning data.
-        db (Session): The database session.
-
-    Returns:
-        dict: Success message confirming fine-tuning.
-    """
-
-    # Get the model from the database (if it exists)
-    model_record = get_model(db, model_id)
-    if not model_record:
-        raise HTTPException(status_code=404, detail='Model not found')
-    
-    # Get model name from the database record
-    model_name = model_record.base_model
-    
-    # Load model and tokenizer
-    model, tokenizer = load_model_and_tokenizer(model_name)
-    if model is None or tokenizer is None:
-        raise HTTPException(status_code=404, detail=f'Model not found: {model_name}')
-
-    # Fine-tune the model with new data
-    try:
-        new_model = fine_tune_model(request.fine_tune_data["texts"], request.fine_tune_data["labels"], model, tokenizer)
-        # Save the fine-tuned model and tokenizer
-        model_new_name = request.name
-
-        save_model(new_model, tokenizer, model_new_name)
-        create_model(
-            session=db,
-            base_model=model_new_name,
-            file_path=settings.MODEL_PATH,
-            date_created=datetime.now()
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Fine-tuning failed: {e}")
-
-    try:
-        new_model_id = get_model_by_name(db, model_new_name).id
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Fine-tuning failed: {e}")
-
-    return {
-        "message": f"Model {model_name} fine-tuned successfully.",
-        "model_id": new_model_id
-    }
-
-# ---------------------------------------------- END EXAMPLE TRAINING -----------------------------------------------
 
 @router.get('/{model_id}', summary='Get an AI model by ID')
 def get_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
@@ -173,7 +108,7 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
 
     model_name = model.base_model
 
-    model, tokenizer = load_model_and_tokenizer(model_name)
+    model, tokenizer = load_model_and_tokenizer(model)
 
     if model == None or tokenizer == None:
         raise HTTPException(status_code=404, detail=f'Model not found: {model_name}')

@@ -6,15 +6,13 @@ from multiprocessing import Process
 from fastapi import APIRouter, Depends, Form, UploadFile
 
 from src.db.db import Session, get_db
-from ..model.model import execute_training
-from ..utils.crud import create_model
-
-router = APIRouter(prefix='/api/processing', tags=['processing'])
+from ..model.training import execute_training
+from ..utils.crud import create_model, get_model
+from ..config import settings
+router = APIRouter(prefix='/processing', tags=['processing'])
 
 # UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../files'))
-UPLOAD_DIR = '/tmp/files'
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
+UPLOAD_DIR = 'tmp\\files'
 
 def save_file(file: UploadFile, name: str) -> str:
     """Save an uploaded file to the UPLOAD_DIR with a new name.
@@ -26,6 +24,8 @@ def save_file(file: UploadFile, name: str) -> str:
     Returns:
        file_path (str): The path of the saved file.
     """
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+
     file_extension = os.path.splitext(file.filename)[-1]
     new_filename = f'{name}{file_extension}'
     file_path = os.path.join(UPLOAD_DIR, new_filename)
@@ -36,10 +36,10 @@ def save_file(file: UploadFile, name: str) -> str:
 
     return file_path
 
-@router.post('/', summary='Train a model')
+@router.post('', summary='Train a model')
 def train_model(
     model_name: str = Form(...),
-    model_language: str = Form(...),
+    base_model: int = Form(...),
     train_data: UploadFile = Form(...),
     valid_data: UploadFile = Form(...),
     test_data: UploadFile = Form(...),
@@ -60,6 +60,13 @@ def train_model(
     - **training_id** (UUID): A unique ID for the training process.
     - **model_name** (str): The name of the model being trained.
     """
+
+    print("XD")
+
+    with Session() as db:
+        model_info = get_model(db, base_model)
+    print(model_info)
+
     files_uuid = uuid.uuid4()
     train_path = save_file(train_data, f'train_{files_uuid}')
     valid_path = save_file(valid_data, f'valid_{files_uuid}')
@@ -67,8 +74,8 @@ def train_model(
 
     model = create_model(
         session=db,
-        base_model=model_language,
-        file_path = model_name,
+        base_model=model_info.model_name,
+        file_path = f'{settings.MODEL_PATH}/{model_name}',
         model_name=model_name,
         train_file_path=train_path,
         valid_file_path=valid_path,

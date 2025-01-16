@@ -1,8 +1,9 @@
-from transformers import AutoTokenizer, AutoModelForTokenClassification, AutoConfig
+from transformers import RobertaTokenizerFast, RobertaForTokenClassification
 from .enum import BaseModels
 from ..config import settings
+from ..db.models import AIModel
 
-def load_model_and_tokenizer(model_name: str) -> tuple[AutoTokenizer, AutoModelForTokenClassification]:
+def load_model_and_tokenizer(model: AIModel, train: bool = False) -> tuple[RobertaTokenizerFast, RobertaForTokenClassification]:
     """
     Loads a pre-trained model and tokenizer from the specified model name.
 
@@ -13,14 +14,12 @@ def load_model_and_tokenizer(model_name: str) -> tuple[AutoTokenizer, AutoModelF
         tuple[AutoTokenizer, AutoModelForTokenClassification]: A tuple containing the tokenizer and model.
     """
     
-    model_path = f"{settings.MODEL_PATH}/{model_name}"
+    model_path = f"{settings.MODEL_PATH}/{model.base_model if train else model.model_name}"
 
     try:
-        config = AutoConfig.from_pretrained(model_path)
 
-        tokenizer = AutoTokenizer.from_pretrained(model_path, ignore_mismatched_sizes=True)
-        model = AutoModelForTokenClassification.from_pretrained(model_path, ignore_mismatched_sizes=True)
-        print(f"Model {model_name} loaded successfully")
+        tokenizer = RobertaTokenizerFast.from_pretrained(model_path, ignore_mismatched_sizes=True, add_prefix_space=True)
+        model = RobertaForTokenClassification.from_pretrained(model_path, ignore_mismatched_sizes=True)
         return model, tokenizer
     except Exception as e:
         print(f"Error loading model: {e}")

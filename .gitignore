@@ -15,10 +15,11 @@ ENV/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Downloaded models and tokenizers
+# Downloaded models, tokenizers, datasets
 models/
 tokenizers/
 results/
+tmp/
 
 # Database
 databases/

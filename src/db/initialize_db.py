@@ -29,6 +29,7 @@ def create_models():
             model = create_model(
                 session=session,
                 base_model=model_name.value,
+                model_name=model_name.value,
                 file_path=settings.MODEL_PATH,
                 date_created=datetime.datetime.now(),
             )
