@@ -1,6 +1,6 @@
 from transformers import RobertaTokenizerFast, RobertaForTokenClassification
 from ..config import settings
-from ..db.models import AIModel
+from ..database.models import AIModel
 
 label2id = {
     "O": 0,

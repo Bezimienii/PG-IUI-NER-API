@@ -1,6 +1,5 @@
 import os
-from .db import engine, Base, db_context
-from ..db.models import AIModel
+from .context_manager import engine, Base, db_context
 from ..config import settings
 from ..utils.enum import BaseModels
 from ..utils.crud import create_model, get_model_by_name

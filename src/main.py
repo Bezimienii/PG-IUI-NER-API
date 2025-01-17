@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from .routers import main_endpoints, crud_endpoints
 from .model.initialize_models import download_default_models
-from .db.initialize_db import initialize_db, create_models
+from .database.tools import initialize_db, create_models
 
 app = FastAPI(
     title='NER API',
@@ -10,11 +10,11 @@ app = FastAPI(
     version='endgame'
 )
 
+# ----------------- Routers -----------------------
 app.include_router(crud_endpoints.router)
 app.include_router(main_endpoints.router)
 
-
-# :)
+# ----------------- Initialization -----------------
 initialize_db()
 create_models()
 download_default_models()

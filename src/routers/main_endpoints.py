@@ -7,7 +7,7 @@ from multiprocessing import Process
 
 from ..config import settings
 
-from ..db.db import get_db
+from ..database.context_manager import get_db
 from ..utils.crud import create_model, get_model
 from ..utils.models_utils import load_model_and_tokenizer
 from ..model.training import execute_training
@@ -148,3 +148,22 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
         return {'sentence': input_text, 'words': processed_text_json, 'status': 'success'}
     except json.JSONDecodeError:
         return {"error": "Invalid JSON input"}
+    
+# ----------------- STATE -----------------
+
+@router.get('/{model_id}/state', summary='Check if model is training')
+def get_ai_model_state(model_id: int, db: Session = Depends(get_db)) -> dict:
+    """Check if model is training.
+
+    Args:
+        model_id (int): The ID of the AI model to get.
+        db (Session): The database session.
+
+    Returns:
+        dict: answer for NER process
+    """
+    model = get_model(db, model_id)
+    if not model:
+        raise HTTPException(status_code=404, detail='Model not found')
+
+    return {'is_training': model.is_training, 'is_trained': model.is_trained}

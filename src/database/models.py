@@ -1,7 +1,7 @@
 from sqlalchemy import DATE, Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from .db import Base
+from .context_manager import Base
 
 
 class AIModel(Base):

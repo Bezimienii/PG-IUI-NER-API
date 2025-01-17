@@ -1,11 +1,10 @@
 import os
-from fastapi import APIRouter, Depends, HTTPException, Form, UploadFile
+from fastapi import APIRouter, Depends, HTTPException
 from datetime import date
 from sqlalchemy.orm import Session
 
-from ..db.db import get_db
-from ..utils.crud import create_model, delete_model, get_model, get_models
-from ..model.training import execute_training
+from ..database.context_manager import get_db
+from ..utils.crud import delete_model, get_model, get_models
 from pydantic import BaseModel
 
 router = APIRouter(prefix='/api/models', tags=['AI Models'])

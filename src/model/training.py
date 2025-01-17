@@ -1,33 +1,16 @@
 import os
-import pandas as pd
-import numpy as np
-import json
-import re
-from nltk.tokenize import sent_tokenize
-from transformers import RobertaForTokenClassification, AutoModelForTokenClassification, AutoTokenizer, pipeline, \
-    DataCollatorForTokenClassification, PretrainedConfig, RobertaConfig
 from transformers import TrainingArguments, Trainer
-from torch.utils.data import DataLoader
 import torch
-import torch.nn as nn
-import transformers
-from tqdm import tqdm
-import glob
-import evaluate
-import datetime
-import warnings
-from ..db.db import get_db, Session
-from ..processing.process_input_file import process_input_file
-from ..utils.crud import create_model, delete_model, get_model, get_models, update_training_process_id
-from ..utils.models_utils import load_model_and_tokenizer
+from ..database.context_manager import Session
+from ..utils.crud import get_model, update_training_status, update_training_process_id
+from ..utils.models_utils import load_model_and_tokenizer, label2id
 from datasets import Dataset, DatasetDict
 from ..config import settings
+
 MAX_LEN = 512 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-id2label = {0: 'O', 1: 'B-PER', 2: 'I-PER', 3: 'B-ORG', 4: 'I-ORG', 
-            5: 'B-LOC', 6: 'I-LOC', 7: 'B-MISC', 8: 'I-MISC'}
-label2id = {v: k for k, v in id2label.items()}
+id2label = {v: k for k, v in label2id.items()}
 
 def tokenize_and_align_labels(examples, tokenizer):
         tokenized_inputs = tokenizer(examples["tokens"], truncation=True, padding="max_length", max_length=MAX_LEN, is_split_into_words=True)
@@ -72,8 +55,8 @@ def train(model, tokenizer, dataset, output_model_path):
     )
 
     trainer.train()
-    tokenizer.save_pretrained(output_model_path)
-    model.save_pretrained(output_model_path)
+
+    return model, tokenizer
 
 def process_files(path: str):
     texts = []
@@ -94,17 +77,13 @@ def execute_training(model_id):
         update_training_process_id(db, model_id, training_process_id)
         model_info = get_model(db, model_id)
 
-    print(model_info)
-    # Load base model and tokenizer
     model, tokenizer = load_model_and_tokenizer(model_info, train=True)
     
-    # Set ouput file
     output_model_path = f'{settings.MODEL_PATH}/{model_info.model_name}'
 
     train_data = process_files(model_info.train_file_path)
     val_data = process_files(model_info.valid_file_path)
 
-    # Convert to Dataset and map over elements using tokenize_and_align_labels
     datasets = DatasetDict({
         'train': Dataset.from_dict(train_data),
         'val': Dataset.from_dict(val_data)
@@ -112,3 +91,10 @@ def execute_training(model_id):
     tokenized_datasets = datasets.map(lambda x: tokenize_and_align_labels(x, tokenizer), batched=True)
 
     train(model, tokenizer, tokenized_datasets, output_model_path)
+
+    
+    tokenizer.save_pretrained(output_model_path)
+    model.save_pretrained(output_model_path)
+
+    with Session() as db:
+        update_training_status(db, model_id, is_training=False, is_trained=True)

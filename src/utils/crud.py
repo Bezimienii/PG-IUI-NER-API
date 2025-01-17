@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from ..db.models import AIModel
+from ..database.models import AIModel
 
 
 def update_training_status(session: Session, model_id: int, is_training: bool, is_trained) -> AIModel | None:
