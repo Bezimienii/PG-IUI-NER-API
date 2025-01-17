@@ -72,8 +72,6 @@ def train_model(
     - **model_name** (str): The name of the model being trained.
     """
 
-    print("XD")
-
     with Session() as db:
         model_info = get_model(db, base_model)
     print(model_info)
@@ -132,6 +130,9 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
     model = get_model(db, model_id)
     if not model:
         raise HTTPException(status_code=404, detail='Model not found')
+
+    if not model.is_trained:
+        raise HTTPException(status_code=404, detail='Model not trained')
 
     model_name = model.base_model
 

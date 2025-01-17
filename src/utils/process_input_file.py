@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from ..utils.models_utils import label2id
+from .models_utils import label2id
 
 
 class Sentence(BaseModel):
