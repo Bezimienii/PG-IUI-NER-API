@@ -20,6 +20,7 @@ models/
 tokenizers/
 results/
 tmp/
+.ruff_cache/
 
 # Database
 databases/
