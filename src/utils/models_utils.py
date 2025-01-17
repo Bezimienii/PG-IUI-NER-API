@@ -1,7 +1,19 @@
 from transformers import RobertaTokenizerFast, RobertaForTokenClassification
-from .enum import BaseModels
 from ..config import settings
 from ..db.models import AIModel
+
+label2id = {
+    "O": 0,
+    "B-PER": 1,
+    "I-PER": 2,
+    "B-ORG": 3,
+    "I-ORG": 4,
+    "B-LOC": 5,
+    "I-LOC": 6,
+    "B-MISC": 7,
+    "I-MISC": 8,
+}
+
 
 def load_model_and_tokenizer(model: AIModel, train: bool = False) -> tuple[RobertaTokenizerFast, RobertaForTokenClassification]:
     """

@@ -1,18 +1,29 @@
-import os
-import uuid
-from datetime import datetime
+from datetime import datetime, date
+
+from fastapi import APIRouter, Depends, HTTPException, Form, UploadFile
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 from multiprocessing import Process
 
-from fastapi import APIRouter, Depends, Form, UploadFile
-
-from src.db.db import Session, get_db
-from ..model.training import execute_training
-from ..utils.crud import create_model, get_model
 from ..config import settings
-router = APIRouter(prefix='/processing', tags=['processing'])
 
-# UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../files'))
-UPLOAD_DIR = 'tmp\\files'
+from ..db.db import get_db
+from ..utils.crud import create_model, get_model
+from ..utils.models_utils import load_model_and_tokenizer
+from ..model.training import execute_training
+from pydantic import BaseModel
+from transformers import pipeline
+import numpy as np
+import uuid
+import json
+import os
+
+router = APIRouter(prefix='/api', tags=['AI Models'])
+
+
+# ----------------- Training -----------------
+
+UPLOAD_DIR = settings.UPLOAD_DIR
 
 def save_file(file: UploadFile, name: str) -> str:
     """Save an uploaded file to the UPLOAD_DIR with a new name.
@@ -92,3 +103,48 @@ def train_model(
     p.start()
 
     return {'message': 'Successfully started training model.', 'model_name': model_name, 'training_process_id': p.pid}
+
+
+# ----------------- NER -----------------
+
+def float32_to_float(obj):
+    if isinstance(obj, np.float32):
+        return float(obj)
+    return obj
+
+class CreateRequestNER(BaseModel):
+    input_text: str
+
+@router.post('/{model_id}', summary='Pass input for a model to do NER')
+def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends(get_db)) -> dict:
+    """Pass input for a model to do NER.
+
+    Args:
+        model_id (int): The ID of the AI model to get.
+        request (CreateRequestNER): NER request with input_text to process
+        db (Session): The database session.
+
+    Returns:
+        dict: answer for NER process
+    """
+    input_text = request.input_text
+
+    model = get_model(db, model_id)
+    if not model:
+        raise HTTPException(status_code=404, detail='Model not found')
+
+    model_name = model.base_model
+
+    model, tokenizer = load_model_and_tokenizer(model)
+
+    if model == None or tokenizer == None:
+        raise HTTPException(status_code=404, detail=f'Model not found: {model_name}')
+
+    nlp = pipeline('ner', model=model, tokenizer=tokenizer, aggregation_strategy="simple")
+    processed_text = nlp(input_text)
+
+    try:
+        processed_text_json = [ {key: float(value) if isinstance(value, np.float32) else value for key, value in item.items()} for item in processed_text ]
+        return {'sentence': input_text, 'words': processed_text_json, 'status': 'success'}
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON input"}

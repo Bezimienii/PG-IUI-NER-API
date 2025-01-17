@@ -1,9 +1,8 @@
 import os 
-from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
+from transformers import AutoModelForTokenClassification, AutoTokenizer
 
 from ..utils.enum import BaseModels
 from ..config import settings
-from ..db.db import get_db
 
 def download_model(model_name: str) -> None:
     """
