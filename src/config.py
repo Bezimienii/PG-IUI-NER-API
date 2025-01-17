@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     DEBUG : bool = True
     ENG_MODEL : str = "Birband/roberta_ner_eng"
     PL_MODEL : str ="Birband/roberta_ner_pl"
-    UPLOAD_DIR : str = 'tmp\\files'
+    UPLOAD_DIR : str = 'tmp/files'
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

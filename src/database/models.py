@@ -19,8 +19,8 @@ class AIModel(Base):
     test_file_path: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     training_process_id: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_trained: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    version: Mapped[str] = mapped_column(Integer, nullable=False, default=1)
-
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    
     def generate_name(self, extension: str) -> str:
         """Generates a unique name for the model based on the base model and version.
 

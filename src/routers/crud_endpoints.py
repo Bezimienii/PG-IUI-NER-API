@@ -1,6 +1,7 @@
 from datetime import date
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+from requests import Session
 
 from ..database.context_manager import get_db
 from ..utils.crud import delete_model, get_model, get_models
@@ -9,7 +10,7 @@ router = APIRouter(prefix='/api/model', tags=['AI Models'])
 
 
 @router.get('/', summary='Get all AI models')
-def get_ai_models() -> dict:
+def get_ai_models(db: Session = Depends(get_db)) -> dict:
     """Gets all AI models.
 
     Args:
@@ -18,7 +19,6 @@ def get_ai_models() -> dict:
     Returns:
         dict: A dictionary containing the all available AI models data.
     """
-    db = get_db()
 
     models = get_models(db)
     if models:
@@ -44,7 +44,7 @@ def get_ai_models() -> dict:
 
 
 @router.get('/{model_id}', summary='Get an AI model by ID')
-def get_ai_model(model_id: int) -> dict:
+def get_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
     """Gets an AI model by its ID.
 
     Args:
@@ -54,7 +54,6 @@ def get_ai_model(model_id: int) -> dict:
     Returns:
         dict: A dictionary containing the AI model data.
     """
-    db = get_db()
 
     model = get_model(db, model_id)
     if model:
@@ -73,7 +72,7 @@ def get_ai_model(model_id: int) -> dict:
 
 
 @router.delete('/{model_id}', summary='Delete an AI model by ID')
-def delete_ai_model(model_id: int) -> dict:
+def delete_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
     """Deletes an AI model by its ID.
 
     Args:
@@ -83,7 +82,6 @@ def delete_ai_model(model_id: int) -> dict:
     Returns:
         dict: A dictionary containing the message of the deletion.
     """
-    db = get_db()
 
     model = delete_model(db, model_id)
     if model:

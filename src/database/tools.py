@@ -33,6 +33,8 @@ def create_models():
                 model_name=model_name.value,
                 file_path=settings.MODEL_PATH,
                 date_created=datetime.datetime.now(),
+                is_trained=True,
+                is_training=False,
             )
             print(f"Model {model.base_model} created.")
     print("Models created.")

@@ -5,13 +5,12 @@ from datetime import datetime
 from multiprocessing import Process
 
 import numpy as np
-from fastapi import APIRouter, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Form, HTTPException, UploadFile, Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
 from transformers import pipeline
 
 from ..config import settings
-from ..database.context_manager import get_db
+from ..database.context_manager import get_db, Session
 from ..model.training import execute_training
 from ..utils.crud import create_model, get_model
 from ..utils.models_utils import load_model_and_tokenizer
@@ -51,7 +50,8 @@ def train_model(
     base_model: int = Form(...),
     train_data: UploadFile = Form(...),
     valid_data: UploadFile = Form(...),
-    test_data: UploadFile = Form(...)
+    test_data: UploadFile = Form(...),
+    db: Session = Depends(get_db)
 ):
     """Initiates the training process for a Named-Entity Recognition (NER) model.
 
@@ -70,7 +70,6 @@ def train_model(
     """
     with Session() as db:
         model_info = get_model(db, base_model)
-    print(model_info)
 
     files_uuid = uuid.uuid4()
     train_path = save_file(train_data, f'train_{files_uuid}')
@@ -112,7 +111,7 @@ class CreateRequestNER(BaseModel):
     input_text: str
 
 @router.post('/{model_id}/ner', summary='Pass input for a model to do NER')
-def get_ai_model(model_id: int, request: CreateRequestNER) -> dict:
+def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends(get_db)) -> dict:
     """Pass input for a model to do NER.
 
     Args:
@@ -123,7 +122,6 @@ def get_ai_model(model_id: int, request: CreateRequestNER) -> dict:
     Returns:
         dict: answer for NER process
     """
-    db = get_db()
 
     input_text = request.input_text
 
@@ -158,7 +156,7 @@ def get_ai_model(model_id: int, request: CreateRequestNER) -> dict:
 # ----------------- STATE -----------------
 
 @router.get('/{model_id}/state', summary='Check if model is training')
-def get_ai_model_state(model_id: int) -> dict:
+def get_ai_model_state(model_id: int, db: Session = Depends(get_db)) -> dict:
     """Check if model is training.
 
     Args:
@@ -167,7 +165,6 @@ def get_ai_model_state(model_id: int) -> dict:
     Returns:
         dict: answer for NER process
     """
-    db = get_db()
 
     model = get_model(db, model_id)
     if not model:
