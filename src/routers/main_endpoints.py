@@ -16,7 +16,7 @@ from ..model.training import execute_training
 from ..utils.crud import create_model, get_model
 from ..utils.models_utils import load_model_and_tokenizer
 
-router = APIRouter(prefix='/api', tags=['AI Models'])
+router = APIRouter(prefix='/api/model', tags=['AI Models'])
 
 
 # ----------------- Training -----------------
@@ -45,7 +45,7 @@ def save_file(file: UploadFile, name: str) -> str:
 
     return file_path
 
-@router.post('', summary='Train a model')
+@router.post('/train', summary='Train a model')
 def train_model(
     model_name: str = Form(...),
     base_model: int = Form(...),
@@ -111,7 +111,7 @@ class CreateRequestNER(BaseModel):
     """Request model for NER."""
     input_text: str
 
-@router.post('/{model_id}', summary='Pass input for a model to do NER')
+@router.post('/{model_id}/ner', summary='Pass input for a model to do NER')
 def get_ai_model(model_id: int, request: CreateRequestNER) -> dict:
     """Pass input for a model to do NER.
 

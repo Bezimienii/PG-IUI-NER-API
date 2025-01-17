@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException
 from ..database.context_manager import get_db
 from ..utils.crud import delete_model, get_model, get_models
 
-router = APIRouter(prefix='/api/models', tags=['AI Models'])
+router = APIRouter(prefix='/api/model', tags=['AI Models'])
 
 
 @router.get('/', summary='Get all AI models')
