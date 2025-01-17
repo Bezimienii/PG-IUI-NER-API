@@ -11,7 +11,8 @@ def update_training_status(session: Session, model_id: int, is_training: bool, i
     Args:
         session (Session): The database session.
         model_id (int): The ID of the model to update.
-        is_training (bool): The new training status.
+        is_training (bool): The new training status of the model.
+        is_trained (bool): The new trained status of the model.
 
     Returns:
         None
@@ -117,19 +118,35 @@ def get_models(session: Session) -> list[AIModel] | None:
         return None
 
 
-def create_model(session: Session, base_model: str, file_path: str, date_created: datetime, is_training: bool = False, is_trained: bool = False, model_name: str = "", train_file_path: str = "", valid_file_path: str = "", test_file_path: str = "", training_process_id: int = 0, ) -> AIModel:
+def create_model(session: Session,
+                 base_model: str,
+                 file_path: str,
+                 date_created: datetime,
+                 is_training: bool = False,
+                 is_trained: bool = False,
+                 model_name: str = "",
+                 train_file_path: str = "",
+                 valid_file_path: str = "",
+                 test_file_path: str = "",
+                 training_process_id: int = 0) -> AIModel:
     """Creates a new model in the database.
 
     Args:
         session (Session): The database session.
-        base_model (str): The base model of the model.
-        file_path (str): The file path of the model.
-        date_created (str): The date the model was created.
+        base_model (str): The base model of the new model.
+        file_path (str): The file path of the new model.
+        date_created (datetime): The creation date of the new model.
+        is_training (bool): The training status of the new model.
+        is_trained (bool): The trained status of the new model.
+        model_name (str): The name of the new model.
+        train_file_path (str): The training file path of the new model.
+        valid_file_path (str): The validation file path of the new model.
+        test_file_path (str): The test file path of the new model.
+        training_process_id (int): The training process ID of the new model.
 
     Returns:
         AIModel: The created model.
     """
-
     model = AIModel(
         base_model=base_model,
         file_path=file_path,

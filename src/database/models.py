@@ -5,6 +5,7 @@ from .context_manager import Base
 
 
 class AIModel(Base):
+    """The AIModel class represents an AI model in the database."""
     __tablename__ = 'ai_model'
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -37,4 +38,8 @@ class AIModel(Base):
         Returns:
             str: A string representation of the AIModel object.
         """
-        return f'<AIModel(id={self.id}, base_model={self.base_model}, file_path={self.file_path}, date_created={self.date_created}, is_training={self.is_training}, is_trained={self.is_trained} version={self.version})>'
+        return (
+            f'<AIModel(id={self.id}, base_model={self.base_model}, file_path={self.file_path}, '
+            f'date_created={self.date_created}, is_training={self.is_training}, '
+            f'is_trained={self.is_trained}, version={self.version})>'
+        )

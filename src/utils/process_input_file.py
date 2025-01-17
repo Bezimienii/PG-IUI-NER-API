@@ -1,8 +1,10 @@
 from pydantic import BaseModel
+
 from .models_utils import label2id
 
 
 class Sentence(BaseModel):
+    """A class used to represent a sentence."""
     id: int
     ner_tags: list[int]
     tokens: list[str]

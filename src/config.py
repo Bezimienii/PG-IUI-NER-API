@@ -1,9 +1,10 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
 class Settings(BaseSettings):
+    """Application settings. This class is used to store the application settings and/or load them from a .env file."""
     DATABASE_URL : str ="sqlite:///databases/models.db"
     TOKENIZER_PATH : str ="models"
     MODEL_PATH : str ="models"

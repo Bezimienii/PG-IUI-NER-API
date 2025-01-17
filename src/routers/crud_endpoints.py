@@ -1,17 +1,15 @@
-import os
-from fastapi import APIRouter, Depends, HTTPException
 from datetime import date
-from sqlalchemy.orm import Session
+
+from fastapi import APIRouter, HTTPException
 
 from ..database.context_manager import get_db
 from ..utils.crud import delete_model, get_model, get_models
-from pydantic import BaseModel
 
 router = APIRouter(prefix='/api/models', tags=['AI Models'])
 
 
 @router.get('/', summary='Get all AI models')
-def get_ai_model(db: Session = Depends(get_db)) -> dict:
+def get_ai_models() -> dict:
     """Gets all AI models.
 
     Args:
@@ -20,17 +18,21 @@ def get_ai_model(db: Session = Depends(get_db)) -> dict:
     Returns:
         dict: A dictionary containing the all available AI models data.
     """
+    db = get_db()
+
     models = get_models(db)
     if models:
         response = [
             {
-                'id': model.id,
-                'base_model': model.base_model,
-                'file_path': model.file_path,
-                'date_created': model.date_created.isoformat() if isinstance(model.date_created, date) else model.date_created,
-                'is_training': model.is_training,
-                'is_trained': model.is_trained,
-                'version': model.version,
+            'id': model.id,
+            'base_model': model.base_model,
+            'file_path': model.file_path,
+            'date_created': model.date_created.isoformat()
+                    if isinstance(model.date_created, date)
+                    else model.date_created,
+            'is_training': model.is_training,
+            'is_trained': model.is_trained,
+            'version': model.version,
             }
             for model in models
         ]
@@ -42,7 +44,7 @@ def get_ai_model(db: Session = Depends(get_db)) -> dict:
 
 
 @router.get('/{model_id}', summary='Get an AI model by ID')
-def get_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
+def get_ai_model(model_id: int) -> dict:
     """Gets an AI model by its ID.
 
     Args:
@@ -52,6 +54,8 @@ def get_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
     Returns:
         dict: A dictionary containing the AI model data.
     """
+    db = get_db()
+
     model = get_model(db, model_id)
     if model:
         return {
@@ -69,7 +73,7 @@ def get_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
 
 
 @router.delete('/{model_id}', summary='Delete an AI model by ID')
-def delete_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
+def delete_ai_model(model_id: int) -> dict:
     """Deletes an AI model by its ID.
 
     Args:
@@ -79,6 +83,8 @@ def delete_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
     Returns:
         dict: A dictionary containing the message of the deletion.
     """
+    db = get_db()
+
     model = delete_model(db, model_id)
     if model:
         return {'message': f'Model {model.base_model} deleted successfully'}

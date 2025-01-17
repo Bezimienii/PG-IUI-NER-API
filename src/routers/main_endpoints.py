@@ -1,22 +1,20 @@
-from datetime import datetime, date
-
-from fastapi import APIRouter, Depends, HTTPException, Form, UploadFile
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from multiprocessing import Process
-
-from ..config import settings
-
-from ..database.context_manager import get_db
-from ..utils.crud import create_model, get_model
-from ..utils.models_utils import load_model_and_tokenizer
-from ..model.training import execute_training
-from pydantic import BaseModel
-from transformers import pipeline
-import numpy as np
-import uuid
 import json
 import os
+import uuid
+from datetime import datetime
+from multiprocessing import Process
+
+import numpy as np
+from fastapi import APIRouter, Form, HTTPException, UploadFile
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from transformers import pipeline
+
+from ..config import settings
+from ..database.context_manager import get_db
+from ..model.training import execute_training
+from ..utils.crud import create_model, get_model
+from ..utils.models_utils import load_model_and_tokenizer
 
 router = APIRouter(prefix='/api', tags=['AI Models'])
 
@@ -53,8 +51,7 @@ def train_model(
     base_model: int = Form(...),
     train_data: UploadFile = Form(...),
     valid_data: UploadFile = Form(...),
-    test_data: UploadFile = Form(...),
-    db: Session = Depends(get_db),
+    test_data: UploadFile = Form(...)
 ):
     """Initiates the training process for a Named-Entity Recognition (NER) model.
 
@@ -71,7 +68,6 @@ def train_model(
     - **training_id** (UUID): A unique ID for the training process.
     - **model_name** (str): The name of the model being trained.
     """
-
     with Session() as db:
         model_info = get_model(db, base_model)
     print(model_info)
@@ -106,15 +102,17 @@ def train_model(
 # ----------------- NER -----------------
 
 def float32_to_float(obj):
+    """Converts np.float32 objects to float."""
     if isinstance(obj, np.float32):
         return float(obj)
     return obj
 
 class CreateRequestNER(BaseModel):
+    """Request model for NER."""
     input_text: str
 
 @router.post('/{model_id}', summary='Pass input for a model to do NER')
-def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends(get_db)) -> dict:
+def get_ai_model(model_id: int, request: CreateRequestNER) -> dict:
     """Pass input for a model to do NER.
 
     Args:
@@ -125,6 +123,8 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
     Returns:
         dict: answer for NER process
     """
+    db = get_db()
+
     input_text = request.input_text
 
     model = get_model(db, model_id)
@@ -138,31 +138,37 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
 
     model, tokenizer = load_model_and_tokenizer(model)
 
-    if model == None or tokenizer == None:
+    if model is None or tokenizer is None:
         raise HTTPException(status_code=404, detail=f'Model not found: {model_name}')
 
     nlp = pipeline('ner', model=model, tokenizer=tokenizer, aggregation_strategy="simple")
     processed_text = nlp(input_text)
 
     try:
-        processed_text_json = [ {key: float(value) if isinstance(value, np.float32) else value for key, value in item.items()} for item in processed_text ]
+        processed_text_json = [ {
+            key: float(value) if isinstance(value, np.float32) else value
+                for key, value in item.items()
+                }
+            for item in processed_text
+            ]
         return {'sentence': input_text, 'words': processed_text_json, 'status': 'success'}
     except json.JSONDecodeError:
         return {"error": "Invalid JSON input"}
-    
+
 # ----------------- STATE -----------------
 
 @router.get('/{model_id}/state', summary='Check if model is training')
-def get_ai_model_state(model_id: int, db: Session = Depends(get_db)) -> dict:
+def get_ai_model_state(model_id: int) -> dict:
     """Check if model is training.
 
     Args:
         model_id (int): The ID of the AI model to get.
-        db (Session): The database session.
 
     Returns:
         dict: answer for NER process
     """
+    db = get_db()
+
     model = get_model(db, model_id)
     if not model:
         raise HTTPException(status_code=404, detail='Model not found')
