@@ -8,6 +8,7 @@ from ..config import settings
 from ..database.context_manager import Session
 from ..utils.crud import get_model, update_training_process_id, update_training_status
 from ..utils.models_utils import label2id, load_model_and_tokenizer
+from ..utils.process_input_file import process_stream_file
 
 MAX_LEN = 512
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -16,11 +17,13 @@ id2label = {v: k for k, v in label2id.items()}
 
 def tokenize_and_align_labels(examples, tokenizer):
         """Tokenize the input texts and align the labels with the tokenized input."""
-        tokenized_inputs = tokenizer(examples["tokens"],
-                                     truncation=True,
-                                     padding="max_length",
-                                     max_length=MAX_LEN,
-                                     is_split_into_words=True)
+        tokenized_inputs = tokenizer(
+            examples["tokens"],
+            truncation=True,
+            padding="max_length",
+            max_length=MAX_LEN,
+            is_split_into_words=True
+        )
         labels = []
 
         for i, label in enumerate(examples['ner_tags']):
@@ -41,43 +44,48 @@ def tokenize_and_align_labels(examples, tokenizer):
         tokenized_inputs["labels"] = labels
         return tokenized_inputs
 
-def train(model, tokenizer, dataset, output_model_path):
-    """Train the model using the provided model, tokenizer, dataset, and output path."""
+
+def train(model, tokenizer, train_file_path, valid_file_path, output_model_path, num_epochs=3):
+    """Train the model using the provided model, tokenizer, train and val data stream, and output path."""
     training_args = TrainingArguments(
         output_dir=output_model_path,
         save_strategy='no',
         learning_rate=2e-5,
         per_device_train_batch_size=4,
-        per_device_eval_batch_size=4,
-        num_train_epochs=3,
-        weight_decay=0.01,
-        evaluation_strategy='epoch'
+        num_train_epochs=1,
+        weight_decay=0.01
     )
 
     trainer = Trainer(
         model=model,
         args=training_args,
-        train_dataset=dataset['train'],
-        eval_dataset=dataset['val'],
+        train_dataset=None,
         tokenizer=tokenizer
     )
 
-    trainer.train()
+    train_data_stream = process_stream_file(train_file_path, batch_size=100_000)
+
+    for epoch in range(num_epochs):
+        for train_batch in train_data_stream:
+            tokenized_train_batch = tokenize_and_align_labels(train_batch, tokenizer)
+            train_dataset = Dataset.from_dict(tokenized_train_batch)
+
+            trainer.train_dataset = train_dataset
+            trainer.train()
+
+        val_data_stream = process_stream_file(valid_file_path, batch_size=100_000)
+
+        all_metrics = []
+        for val_batch in val_data_stream:
+            tokenized_val_batch = tokenize_and_align_labels(val_batch, tokenizer)
+            val_dataset = Dataset.from_dict(tokenized_val_batch)
+
+            metrics = trainer.evaluate(eval_dataset=val_dataset)
+            all_metrics.append(metrics)
+        print(f"Validation Metrics for Epoch {epoch + 1}: {all_metrics}")
 
     return model, tokenizer
 
-def process_files(path: str):
-    """Process the file at the specified path and return the tokens and NER tags as lists."""
-    texts = []
-    labels = []
-
-    with open(path) as f:
-        for line in f:
-            text, label = line.strip().split(';')
-            texts.append(text.split(','))  # Split text into words
-            labels.append([int(x) for x in label.split(',')])  # Convert labels to integers
-
-    return {'tokens': texts, 'ner_tags': labels}
 
 def execute_training(model_id):
     """Execute the training process for the specified model ID."""
@@ -91,17 +99,13 @@ def execute_training(model_id):
 
     output_model_path = f'{settings.MODEL_PATH}/{model_info.model_name}'
 
-    train_data = process_files(model_info.train_file_path)
-    val_data = process_files(model_info.valid_file_path)
-
-    datasets = DatasetDict({
-        'train': Dataset.from_dict(train_data),
-        'val': Dataset.from_dict(val_data)
-    })
-    tokenized_datasets = datasets.map(lambda x: tokenize_and_align_labels(x, tokenizer), batched=True)
-
-    train(model, tokenizer, tokenized_datasets, output_model_path)
-
+    model, tokenizer = train(
+        model,
+        tokenizer,
+        model_info.train_file_path,
+        model_info.valid_file_path,
+        output_model_path
+    )
 
     tokenizer.save_pretrained(output_model_path)
     model.save_pretrained(output_model_path)
