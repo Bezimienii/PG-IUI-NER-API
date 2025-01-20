@@ -1,6 +1,6 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from filelock import FileLock
-import multiprocessing
+from torch import multiprocessing as mp
 
 from ..config import settings
 from ..database.context_manager import Session
@@ -55,6 +55,14 @@ def write_subprocess():
             session.add(processId)
             session.commit()
 
+def delete_sub(sub, session):
+    lock = get_lock()
+
+    with lock:
+        processId = session.query(ProcessId).filter_by(pid=str(sub)).first()
+        session.delete(processId)
+        session.commit()
+
 def delete_subprocess():
     pid = str(getpid())
     lock = get_lock()
@@ -70,7 +78,10 @@ def sortFunc(obj):
 
 def train_subprocess(model_id):
     write_subprocess()
-    execute_training(model_id)
+    try:
+        execute_training(model_id)
+    except Exception as inst:
+        print(inst)
     delete_subprocess()
 
 def job_callback(max_subprocesses):
@@ -85,7 +96,8 @@ def job_callback(max_subprocesses):
                     models.sort(key=sortFunc)
                     chosenModels = models if len(models) < available_subprocesses else models[0:2]
                     for model in chosenModels:
-                        p = multiprocessing.Process(target=train_subprocess, args=(model.id,))  # process independent of parent
+                        mp.set_start_method('spawn')
+                        p = mp.Process(target=train_subprocess, args=(model.id,))  # process independent of parent
                         p.start()
     return job
 

@@ -1,6 +1,5 @@
 from contextlib import asynccontextmanager
 
-import filelock
 from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 
