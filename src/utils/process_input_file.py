@@ -23,26 +23,31 @@ class Sentence(BaseModel):
         }
 
 
-def process_input_file(file_path: str):
-    """Process input conllu file into the desired format for training.
+def process_stream_file(file_path: str, batch_size: int = 100_000):
+    """Process conllu file into the desired format for training in a streaming manner.
 
     Args:
         file_path (str): The path of the file to be processed.
+        batch_size (int): The number of sentences to merge into a single batch.
 
     Returns:
         sentences (list[Sentence]): A list of Sentence objects.
     """
-    sentences: list[Sentence] = []
     current_sentence: Sentence = Sentence.get_empty_sentence()
+    batch: list[Sentence] = []
 
     with open(file_path, encoding='utf-8') as file:
         for line in file:
             line = line.strip()
             if not line:
                 if current_sentence.tokens:
-                    current_sentence.id = len(sentences)
-                    sentences.append(current_sentence)
+                    current_sentence.id = len(batch)
+                    batch.append(current_sentence)
                 current_sentence = Sentence.get_empty_sentence()
+
+                if len(batch) >= batch_size:
+                    yield merge_sentences(batch)
+                    batch = []
             else:
                 parts = line.split('\t')
                 if len(parts) == 3:
@@ -51,24 +56,31 @@ def process_input_file(file_path: str):
                     current_sentence.ner_tags.append(label2id[label])
 
         if current_sentence.tokens:
-            current_sentence.id = len(sentences)
-            sentences.append(current_sentence)
+            current_sentence.id = len(batch)
+            batch.append(current_sentence)
+        if batch:
+            yield merge_sentences(batch)
 
-    merged_sentences: list[Sentence] = []
-    for i in range(0, len(sentences), 5):
-        batch = sentences[i:i + 5]
-        merged_tokens = []
-        merged_ner_tags = []
 
-        for sentence in batch:
-            merged_tokens.extend(sentence.tokens)
-            merged_ner_tags.extend(sentence.ner_tags)
+def merge_sentences(batch: list[Sentence]) -> dict:
+    """ ---Merge a batch of Sentence objects into a single sentence.---
 
-        merged_sentence = Sentence(
-            id=len(merged_sentences),
-            tokens=merged_tokens,
-            ner_tags=merged_ner_tags,
-        )
-        merged_sentences.append(merged_sentence)
 
-    return [sentence.to_dict() for sentence in merged_sentences]
+    Args:
+        batch (list[Sentence]): A list of Sentence objects to merge.
+
+    Returns:
+        dict: A dictionary representing the merged sentences.
+    """
+
+    merged_tokens = []
+    merged_ner_tags = []
+
+    for sentence in batch:
+        merged_tokens.append(sentence.tokens)
+        merged_ner_tags.append(sentence.ner_tags)
+
+    return {
+        "tokens": merged_tokens,
+        "ner_tags": merged_ner_tags
+    }
