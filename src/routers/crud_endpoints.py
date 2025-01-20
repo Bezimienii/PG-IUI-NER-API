@@ -127,6 +127,6 @@ def delete_ai_model(model_id: int, db: Session = Depends(get_db)) -> dict:
 
     model = delete_model(db, model_id)
     if model:
-        return {'message': f'Model {model.base_model} deleted successfully'}
+        return {'message': f'Model by id {model_id} deleted successfully'}
     else:
         raise HTTPException(status_code=404, detail='Model not found')
