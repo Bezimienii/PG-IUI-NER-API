@@ -77,7 +77,7 @@ def train(model, tokenizer, train_file_path, valid_file_path, output_model_path,
     )
 
     for epoch in range(num_epochs):
-        train_data_stream = process_stream_file(train_file_path, batch_size=1000)
+        train_data_stream = process_stream_file(train_file_path, batch_size=10000)
         for train_batch in train_data_stream:
             tokenized_train_batch = tokenize_and_align_labels(train_batch, tokenizer)
             train_dataset = Dataset.from_dict(tokenized_train_batch)
@@ -85,7 +85,7 @@ def train(model, tokenizer, train_file_path, valid_file_path, output_model_path,
             trainer.train_dataset = train_dataset
             trainer.train()
 
-        val_data_stream = process_stream_file(valid_file_path, batch_size=1000)
+        val_data_stream = process_stream_file(valid_file_path, batch_size=10000)
 
         all_metrics = []
         for val_batch in val_data_stream:
