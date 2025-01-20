@@ -43,3 +43,12 @@ class AIModel(Base):
             f'date_created={self.date_created}, is_training={self.is_training}, '
             f'is_trained={self.is_trained}, version={self.version})>'
         )
+
+class ProcessId(Base):
+    __tablename__ = 'process_id'
+    pid: Mapped[str] = mapped_column(String(255), primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), primary_key=True)
+    def __repr__(self) -> str:
+        return (
+            f'<ProcessId(id={self.pid}, name={self.name}>'
+        )

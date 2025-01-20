@@ -76,7 +76,7 @@ def train_model(
     valid_path = save_file(valid_data, f'valid_{files_uuid}')
     test_path = save_file(test_data, f'test_{files_uuid}')
 
-    model = create_model(
+    create_model(
         session=db,
         base_model=model_info.model_name,
         file_path = f'{settings.MODEL_PATH}/{model_name}',
@@ -85,17 +85,13 @@ def train_model(
         valid_file_path=valid_path,
         test_file_path=test_path,
         training_process_id=0,
-        is_training=True,
+        is_training=False,
         is_trained=False,
         date_created=datetime.now(),
     )
 
-    model_id = model.id
 
-    p = Process(target=execute_training, args=(model_id,)) # process independent of parent
-    p.start()
-
-    return {'message': 'Successfully started training model.', 'model_name': model_name, 'training_process_id': p.pid}
+    return {'message': 'Successfully loaded model.', 'model_name': model_name, 'training_process_id': p.pid}
 
 
 # ----------------- NER -----------------

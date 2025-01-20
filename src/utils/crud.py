@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from ..database.models import AIModel
+from ..database.models import AIModel, ProcessId
 
 
 def update_training_status(session: Session, model_id: int, is_training: bool, is_trained) -> AIModel | None:
@@ -111,6 +111,23 @@ def get_models(session: Session) -> list[AIModel] | None:
         AIModel: The model with the specified ID.
     """
     models = session.query(AIModel).all()
+    if models:
+        return models
+    else:
+        print('No available AI models')
+        return None
+
+def get_subprocesses(session) -> list[ProcessId] | None:
+    """Retrieves a model from the database by its ID.
+
+    Args:
+        session (Session): The database session.
+        model_id (int): The ID of the model to retrieve.
+
+    Returns:
+        AIModel: The model with the specified ID.
+    """
+    models = session.query(ProcessId).all()
     if models:
         return models
     else:

@@ -1,8 +1,18 @@
+from contextlib import asynccontextmanager
+
+import filelock
+from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 
 from .database.tools import create_models, initialize_db
 from .model.initialize_models import download_default_models
 from .routers import crud_endpoints, main_endpoints
+
+from .sync.sync_functions import check_and_clean, check, start_job
+
+scheduler = BackgroundScheduler()
+start_job(scheduler)
+scheduler.start()
 
 app = FastAPI(
     title='NER API',
@@ -18,3 +28,8 @@ app.include_router(main_endpoints.router)
 initialize_db()
 create_models()
 download_default_models()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+    scheduler.shutdown()

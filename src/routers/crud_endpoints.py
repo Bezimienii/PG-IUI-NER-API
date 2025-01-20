@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from requests import Session
 
 from ..database.context_manager import get_db
-from ..utils.crud import delete_model, get_model, get_models
+from ..utils.crud import delete_model, get_model, get_models, get_subprocesses
 
 router = APIRouter(prefix='/api/model', tags=['AI Models'])
 
@@ -33,6 +33,30 @@ def get_ai_models(db: Session = Depends(get_db)) -> dict:
             'is_training': model.is_training,
             'is_trained': model.is_trained,
             'version': model.version,
+            }
+            for model in models
+        ]
+        return {"models": response}
+    else:
+        raise HTTPException(status_code=404, detail='Model not found')
+
+@router.get('/subs', summary='Get all AI models')
+def get_ai_subs(db: Session = Depends(get_db)) -> dict:
+    """Gets all AI models.
+
+    Args:
+        db (Session): The database session.
+
+    Returns:
+        dict: A dictionary containing the all available AI models data.
+    """
+
+    models = get_subprocesses(db)
+    if models:
+        response = [
+            {
+            'id': model.pid,
+            'name': model.name
             }
             for model in models
         ]
