@@ -90,8 +90,7 @@ def train_model(
         date_created=datetime.now(),
     )
 
-
-    return {'message': 'Successfully loaded model.', 'model_name': model_name, 'training_process_id': p.pid}
+    return {'message': 'Successfully loaded model.', 'model_name': model_name}
 
 
 # ----------------- NER -----------------
