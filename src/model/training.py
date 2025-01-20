@@ -1,7 +1,7 @@
 import os
 
 import torch
-from datasets import Dataset, DatasetDict
+from datasets import Dataset
 from transformers import Trainer, TrainingArguments
 
 from ..config import settings
@@ -25,6 +25,19 @@ def tokenize_and_align_labels(examples, tokenizer):
             is_split_into_words=True
         )
         labels = []
+
+        """
+        {
+            "ner_tags": [
+                            [0, 0, 0, 0, 0, 5, 6, 0, 0, 0, 0, 5, 0, 0]
+                            [0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 7, 8, 0, 0, 7, 8, 0, 0]
+                        ]
+            "tokens": [
+                        ['This', 'division', 'also', 'contains', 'the', 'Ventana', 'Wilderness', ',', 'home', 'to', 'the', 'California', 'condor', '.']
+                        ['"', 'So', 'here', 'is', 'the', 'balance', 'NBC', 'has', 'to', 'consider', ':', 'The', 'Who', ',', "'", 'Animal', 'Practice', "'", '.']
+                    ]
+        }
+        """
 
         for i, label in enumerate(examples['ner_tags']):
             word_ids = tokenized_inputs.word_ids(batch_index=i)
@@ -63,9 +76,8 @@ def train(model, tokenizer, train_file_path, valid_file_path, output_model_path,
         tokenizer=tokenizer
     )
 
-    train_data_stream = process_stream_file(train_file_path, batch_size=100_000)
-
     for epoch in range(num_epochs):
+        train_data_stream = process_stream_file(train_file_path, batch_size=100_000)
         for train_batch in train_data_stream:
             tokenized_train_batch = tokenize_and_align_labels(train_batch, tokenizer)
             train_dataset = Dataset.from_dict(tokenized_train_batch)

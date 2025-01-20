@@ -63,7 +63,8 @@ def process_stream_file(file_path: str, batch_size: int = 100_000):
 
 
 def merge_sentences(batch: list[Sentence]) -> dict:
-    """Merge a batch of Sentence objects into a single sentence.
+    """ ---Merge a batch of Sentence objects into a single sentence.---
+
 
     Args:
         batch (list[Sentence]): A list of Sentence objects to merge.
@@ -71,16 +72,15 @@ def merge_sentences(batch: list[Sentence]) -> dict:
     Returns:
         dict: A dictionary representing the merged sentences.
     """
+
     merged_tokens = []
     merged_ner_tags = []
 
     for sentence in batch:
-        merged_tokens.extend(sentence.tokens)
-        merged_ner_tags.extend(sentence.ner_tags)
+        merged_tokens.append(sentence.tokens)
+        merged_ner_tags.append(sentence.ner_tags)
 
-    merged_sentence = Sentence(
-        id=0,
-        tokens=merged_tokens,
-        ner_tags=merged_ner_tags,
-    )
-    return merged_sentence.to_dict()
+    return {
+        "tokens": merged_tokens,
+        "ner_tags": merged_ner_tags
+    }
