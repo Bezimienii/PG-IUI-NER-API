@@ -8,7 +8,7 @@ from .database.tools import create_models, initialize_db
 from .model.initialize_models import download_default_models
 from .routers import crud_endpoints, main_endpoints
 
-from .sync.sync_functions import check_and_clean, check, start_job
+from .sync.sync_functions import start_job
 
 scheduler = BackgroundScheduler()
 start_job(scheduler)
