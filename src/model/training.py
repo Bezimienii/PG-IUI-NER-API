@@ -6,7 +6,6 @@ from transformers import Trainer, TrainingArguments
 
 from ..config import settings
 from ..database.context_manager import Session
-from ..sync.sync_functions import write_subprocess, delete_subprocess
 from ..utils.crud import get_model, update_training_process_id, update_training_status
 from ..utils.models_utils import label2id, load_model_and_tokenizer
 from ..utils.process_input_file import process_stream_file
@@ -102,7 +101,6 @@ def train(model, tokenizer, train_file_path, valid_file_path, output_model_path,
 
 def execute_training(model_id):
     """Execute the training process for the specified model ID."""
-    write_subprocess()
     training_process_id = os.getpid()
 
     with Session() as db:
@@ -127,5 +125,3 @@ def execute_training(model_id):
 
     with Session() as db:
         update_training_status(db, model_id, is_training=False, is_trained=True)
-
-    delete_subprocess()

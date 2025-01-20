@@ -68,6 +68,11 @@ def delete_subprocess():
 def sortFunc(obj):
     return obj.id
 
+def train_subprocess(model_id):
+    write_subprocess()
+    execute_training(model_id)
+    delete_subprocess()
+
 def job_callback(max_subprocesses):
     def job():
         lock = get_lock()
@@ -80,7 +85,7 @@ def job_callback(max_subprocesses):
                     models.sort(key=sortFunc)
                     chosenModels = models if len(models) < available_subprocesses else models[0:2]
                     for model in chosenModels:
-                        p = multiprocessing.Process(target=execute_training, args=(model.id,))  # process independent of parent
+                        p = multiprocessing.Process(target=train_subprocess, args=(model.id,))  # process independent of parent
                         p.start()
     return job
 
