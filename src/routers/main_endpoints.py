@@ -2,7 +2,6 @@ import json
 import os
 import uuid
 from datetime import datetime
-from multiprocessing import Process
 
 import numpy as np
 from fastapi import APIRouter, Form, HTTPException, UploadFile, Depends
@@ -11,8 +10,7 @@ from transformers import pipeline
 
 from ..config import settings
 from ..database.context_manager import get_db, Session
-from ..model.training import execute_training
-from ..utils.crud import create_model, get_model
+from ..utils.crud import create_model, get_model, get_model_by_model_name
 from ..utils.models_utils import load_model_and_tokenizer
 
 router = APIRouter(prefix='/api/model', tags=['AI Models'])
@@ -50,8 +48,7 @@ def train_model(
     base_model: int = Form(...),
     train_data: UploadFile = Form(...),
     valid_data: UploadFile = Form(...),
-    test_data: UploadFile = Form(...),
-    db: Session = Depends(get_db)
+    test_data: UploadFile = Form(...)
 ):
     """Initiates the training process for a Named-Entity Recognition (NER) model.
 
@@ -61,14 +58,27 @@ def train_model(
     - **train_data** (UploadFile): The training data for the model.
     - **valid_data** (UploadFile): The validation data for the model.
     - **test_data** (UploadFile): The test data for the model.
-    - **db** (Session): The database session.
 
     **Returns**:
-    - **message** (str): A message indicating the status of the training process.
-    - **training_id** (UUID): A unique ID for the training process.
-    - **model_name** (str): The name of the model being trained.
+    - **dict**: A dictionary confirming the successful initiation of the training process with the following structure:
+        ```json
+            {
+                "message": "Successfully loaded model.",
+                "model_name": "<model_name>"
+            }
+        ```
+
+    **Raises**:
+    - **HTTPException (400)**: If a model with the provided name already exists.
     """
     with Session() as db:
+        existing_model = get_model_by_model_name(db, model_name)
+        if existing_model:
+            return {
+                "message": "Model with the given name already exists.",
+                "model_name": model_name,
+                "is_trained": existing_model.is_trained
+            }
         model_info = get_model(db, base_model)
 
     files_uuid = uuid.uuid4()
@@ -105,17 +115,36 @@ class CreateRequestNER(BaseModel):
     """Request model for NER."""
     input_text: str
 
-@router.post('/{model_id}/ner', summary='Pass input for a model to do NER')
+@router.post('/{model_id}/ner', summary='Perform Named Entity Recognition (NER)')
 def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends(get_db)) -> dict:
-    """Pass input for a model to do NER.
+    """Processes input text for Named Entity Recognition using a specified model.
 
-    Args:
-        model_id (int): The ID of the AI model to get.
-        request (CreateRequestNER): NER request with input_text to process
-        db (Session): The database session.
+    **Args**:
+    - **model_id** (int): The ID of the AI model to use for NER.
+    - **request** (CreateRequestNER): Input text for the NER process.
+    - **db** (Session): The database session.
 
-    Returns:
-        dict: answer for NER process
+    **Returns**:
+    - **dict**: A dictionary containing the NER results with the following structure:
+        ```json
+            {
+                "sentence": "<input_text>",
+                "words": [
+                    {
+                        "entity_group": str,
+                        "score": float,
+                        "word": str,
+                        "start": int,
+                        "end": int
+                    }
+                ],
+                "status": "success"
+            }
+        ```
+
+    **Raises**:
+    - **HTTPException (404)**: If the model is not found or not trained.
+    - **HTTPException (400)**: If there is an error processing the input text.
     """
 
     input_text = request.input_text
@@ -150,15 +179,25 @@ def get_ai_model(model_id: int, request: CreateRequestNER, db: Session = Depends
 
 # ----------------- STATE -----------------
 
-@router.get('/{model_id}/state', summary='Check if model is training')
+@router.get('/{model_id}/state', summary='Get model training state')
 def get_ai_model_state(model_id: int, db: Session = Depends(get_db)) -> dict:
-    """Check if model is training.
+    """Checks the training state of a specific AI model.
 
-    Args:
-        model_id (int): The ID of the AI model to get.
+    **Args**:
+    - **model_id** (int): The ID of the AI model to check.
+    - **db** (Session): The database session.
 
-    Returns:
-        dict: answer for NER process
+    **Returns**:
+    - **dict**: A dictionary containing the training state of the model with the following structure:
+      ```json
+      {
+          "is_training": bool,
+          "is_trained": bool
+      }
+      ```
+
+    **Raises**:
+    - **HTTPException (404)**: If the model with the specified ID is not found in the database.
     """
 
     model = get_model(db, model_id)
