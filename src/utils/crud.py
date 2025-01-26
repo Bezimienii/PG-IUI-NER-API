@@ -92,7 +92,7 @@ def get_model_by_model_name(session: Session, model_name: str) -> AIModel | None
     Returns:
         AIModel: The model with the specified ID.
     """
-    model = session.query(AIModel).filter_by(name=model_name).first()
+    model = session.query(AIModel).filter_by(model_name=model_name).first()
     if model:
         return model
     else:

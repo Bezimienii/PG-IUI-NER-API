@@ -2,7 +2,6 @@ import json
 import os
 import uuid
 from datetime import datetime
-from multiprocessing import Process
 
 import numpy as np
 from fastapi import APIRouter, Form, HTTPException, UploadFile, Depends
@@ -11,9 +10,7 @@ from transformers import pipeline
 
 from ..config import settings
 from ..database.context_manager import get_db, Session
-from ..database.models import AIModel
-from ..model.training import execute_training
-from ..utils.crud import create_model, get_model
+from ..utils.crud import create_model, get_model, get_model_by_model_name
 from ..utils.models_utils import load_model_and_tokenizer
 
 router = APIRouter(prefix='/api/model', tags=['AI Models'])
@@ -75,7 +72,7 @@ def train_model(
     - **HTTPException (400)**: If a model with the provided name already exists.
     """
     with Session() as db:
-        existing_model = db.query(AIModel).filter_by(model_name=model_name).first()
+        existing_model = get_model_by_model_name(db, model_name)
         if existing_model:
             return {
                 "message": "Model with the given name already exists.",
