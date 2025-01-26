@@ -34,7 +34,7 @@ def test_model(model_id: int, input_text: str):
     print(f"Test Model {model_id} Response:", response.status_code, response.json())
 
 
-def train_model(path: str, model_name: str):
+def train_model(path: str, model_name: str, base_model: str):
     url = f"{BASE_URL}/{MODELS}/{TRAIN}"
 
     files = {
@@ -44,7 +44,7 @@ def train_model(path: str, model_name: str):
     }
     data = {
         "model_name": model_name,
-        "base_model": "1"
+        "base_model": base_model
     }
     
     response = requests.post(url, data=data, files=files)
@@ -67,15 +67,16 @@ def check_status(model_id):
 
 
 def check_model_trained(model_id):
-    is_training=True
-    while(is_training):
+    is_training = True
+    is_trained = False
+    while(not is_trained):
         is_training, is_trained = check_status(model_id)
         print("still training model")
         
-        if not is_training:
+        if is_trained:
             break
     
-        time.sleep(60)
+        time.sleep(30)
 
     print(is_training, is_trained)
 
@@ -88,15 +89,15 @@ def main():
         test_model(eng_model_id, "The Oracle Solution is the one thing I love.")
         test_model(pl_model_id, "Nowy Jork to fajne miasto ale i tak bardziej lubię Isaaca El Newtona.")
 
-        train_model("en_sample", "final_test_en")
-        test_model_id = get_model_id_by_model_name("final_test_en")
+        train_model("en_sample", "project_test_en", "1")
+        test_model_id = get_model_id_by_model_name("project_test_en")
 
         check_model_trained(test_model_id)
         
         test_model(test_model_id, "Oracle is good.")
 
-        train_model("pl_sample", "final_test_pl")
-        test_model_id = get_model_id_by_model_name("final_test_pl")
+        train_model("pl_sample", "project_test_pl", "2")
+        test_model_id = get_model_id_by_model_name("project_test_pl")
 
         check_model_trained(test_model_id)
         
