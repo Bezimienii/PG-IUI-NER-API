@@ -11,6 +11,7 @@ from transformers import pipeline
 
 from ..config import settings
 from ..database.context_manager import get_db, Session
+from ..database.models import AIModel
 from ..model.training import execute_training
 from ..utils.crud import create_model, get_model
 from ..utils.models_utils import load_model_and_tokenizer
@@ -69,8 +70,18 @@ def train_model(
                 "model_name": "<model_name>"
             }
         ```
+
+    **Raises**:
+    - **HTTPException (400)**: If a model with the provided name already exists.
     """
     with Session() as db:
+        existing_model = db.query(AIModel).filter_by(model_name=model_name).first()
+        if existing_model:
+            return {
+                "message": "Model with the given name already exists.",
+                "model_name": model_name,
+                "is_trained": existing_model.is_trained
+            }
         model_info = get_model(db, base_model)
 
     files_uuid = uuid.uuid4()
