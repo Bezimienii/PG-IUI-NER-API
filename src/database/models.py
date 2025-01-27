@@ -20,6 +20,8 @@ class AIModel(Base):
     training_process_id: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     is_trained: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    epoch: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    num_of_epochs: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     
     def generate_name(self, extension: str) -> str:
         """Generates a unique name for the model based on the base model and version.

@@ -27,6 +27,17 @@ def update_training_status(session: Session, model_id: int, is_training: bool, i
         print(f'Model with ID {model_id} not found.')
         return None
 
+def update_training_epoch(session: Session, model_id: int, epoch: int, num_of_epochs: int):
+    model = get_model(session, model_id)
+    if model:
+        model.epoch = epoch
+        model.num_of_epochs = num_of_epochs
+        session.commit()
+        return model
+    else:
+        print(f'Model with ID {model_id} not found.')
+        return None
+
 def update_training_process_id(session: Session, model_id: int, training_process_id: int) -> AIModel | None:
     """Updates the training process id of a model in the database.
 
@@ -174,7 +185,9 @@ def create_model(session: Session,
         train_file_path=train_file_path,
         valid_file_path=valid_file_path,
         test_file_path=test_file_path,
-        training_process_id=training_process_id
+        training_process_id=training_process_id,
+        epoch=0,
+        num_of_epochs=0
     )
     session.add(model)
     session.commit()

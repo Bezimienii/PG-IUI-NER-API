@@ -9,9 +9,6 @@ from .routers import crud_endpoints, main_endpoints
 
 from .sync.sync_functions import start_job
 
-scheduler = BackgroundScheduler()
-start_job(scheduler)
-scheduler.start()
 
 app = FastAPI(
     title='NER API',
@@ -27,6 +24,9 @@ app.include_router(main_endpoints.router)
 initialize_db()
 create_models()
 download_default_models()
+scheduler = BackgroundScheduler()
+start_job(scheduler)
+scheduler.start()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

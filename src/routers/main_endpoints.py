@@ -204,4 +204,5 @@ def get_ai_model_state(model_id: int, db: Session = Depends(get_db)) -> dict:
     if not model:
         raise HTTPException(status_code=404, detail='Model not found')
 
-    return {'is_training': model.is_training, 'is_trained': model.is_trained}
+    return {'is_training': model.is_training, 'is_trained': model.is_trained,
+            'epoch': model.epoch, 'num_of_epochs': model.num_of_epochs}

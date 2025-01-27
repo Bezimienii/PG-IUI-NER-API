@@ -6,7 +6,7 @@ from transformers import Trainer, TrainingArguments
 
 from ..config import settings
 from ..database.context_manager import Session
-from ..utils.crud import get_model, update_training_process_id, update_training_status
+from ..utils.crud import get_model, update_training_process_id, update_training_status, update_training_epoch
 from ..utils.models_utils import label2id, load_model_and_tokenizer
 from ..utils.process_input_file import process_stream_file
 
@@ -58,7 +58,7 @@ def tokenize_and_align_labels(examples, tokenizer):
         return tokenized_inputs
 
 
-def train(model, tokenizer, train_file_path, valid_file_path, output_model_path, num_epochs=3):
+def train(model, tokenizer, train_file_path, valid_file_path, output_model_path, model_id, num_epochs=3):
     """Train the model using the provided model, tokenizer, train and val data stream, and output path."""
     training_args = TrainingArguments(
         output_dir=output_model_path,
@@ -77,7 +77,11 @@ def train(model, tokenizer, train_file_path, valid_file_path, output_model_path,
     )
 
     for epoch in range(num_epochs):
-        train_data_stream = process_stream_file(train_file_path, batch_size=10000)
+
+        with Session() as db:
+            update_training_epoch(db, model_id, epoch+1, num_epochs)
+
+        train_data_stream = process_stream_file(train_file_path, batch_size=100)
         for train_batch in train_data_stream:
             tokenized_train_batch = tokenize_and_align_labels(train_batch, tokenizer)
             train_dataset = Dataset.from_dict(tokenized_train_batch)
@@ -85,7 +89,7 @@ def train(model, tokenizer, train_file_path, valid_file_path, output_model_path,
             trainer.train_dataset = train_dataset
             trainer.train()
 
-        val_data_stream = process_stream_file(valid_file_path, batch_size=10000)
+        val_data_stream = process_stream_file(valid_file_path, batch_size=100)
 
         all_metrics = []
         for val_batch in val_data_stream:
@@ -117,7 +121,8 @@ def execute_training(model_id):
         tokenizer,
         model_info.train_file_path,
         model_info.valid_file_path,
-        output_model_path
+        output_model_path,
+        model_id
     )
 
     tokenizer.save_pretrained(output_model_path)

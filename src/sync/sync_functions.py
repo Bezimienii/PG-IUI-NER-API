@@ -10,7 +10,7 @@ import psutil
 from os import getpid
 
 from ..model.training import execute_training
-from ..utils.crud import update_training_status
+from ..utils.crud import update_training_status, update_training_epoch
 
 
 def get_lock() -> FileLock:
@@ -84,6 +84,7 @@ def train_subprocess(model_id):
     except Exception as inst:
         with Session() as db:
             update_training_status(db, model_id, is_training=True, is_trained=False)
+            update_training_epoch(db, model_id, 0, 0)
         print(inst)
 
     delete_subprocess()
