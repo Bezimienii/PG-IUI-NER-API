@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  fastapi-app:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./databases:/app/databases
+      - ./models:/app/models
+      - ./tmp:/app/tmp
+    command: ["sh", "-c", "nohup python -m fastapi run src/main.py --port 8080"]
+    environment:
+      - DATABASES_DIR=/app/databases
+      - MODELS_DIR=/app/models
+      - TMP_DIR=/app/tmp
