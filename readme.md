@@ -1,5 +1,9 @@
 # Intelligent Text Processing Service - Project Template
 
+## IMPORTANT
+
+TO TRAIN MODELS ON CPU IT IS REQUIRED TO HAVE A LOT OF RAM! FROM OUR TESTS IT IS NECESSARY TO HAVE AT LEAST 24GB!
+
 ## Project Setup
 
 1. **Install Python 3.12**
@@ -50,14 +54,10 @@
 
 5. Build and test the project
     * install Docker from the official website (https://www.docker.com/get-started/)
-    * run `build.sh` (Linux) or `build.ps1` (Windows) to build the project
-    * start the Docker Container by running:
-      ```bash
-      docker run --rm -p 8080:8080 renameme:latest
-      ```
-    * visit http://localhost:8080/docs You should see the Swagger UI and be able to send a request to the service REST
-      API
-
+    * run `docker-compose build`
+    * then run `docker-compose up -d` where `-d` means that it's going to run in the background
+    * check if localhost:8080/docs is available
+  
 6. Rename all places and variables that use to service name:
     * `src/renameme_service` directory
     * Docker Image name in `build.ps1` and `build.sh`

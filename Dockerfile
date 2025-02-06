@@ -21,7 +21,7 @@ RUN set -x && \
     chown python:python -R /app
 
 
-USER python
+
 
 RUN mkdir -p /app/src/sync && chmod -R 777 /app/src/sync
 RUN touch /app/src/sync/counter.lock && chmod 777 /app/src/sync/counter.lock
@@ -36,6 +36,11 @@ COPY src src
 # Create directories for local storage
 RUN mkdir -p /app/databases /app/models /app/tmp && \
     chown -R python:python /app/databases /app/models /app/tmp
+
+RUN chown -R python:python /app
+RUN chmod -R 777 /app
+
+USER python
 
 # Set environment variables for local directories
 ENV DATABASES_DIR="/app/databases"
