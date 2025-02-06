@@ -16,14 +16,14 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Downloaded models, tokenizers, datasets
-models/
+models/*
 tokenizers/
 results/
-tmp/
+tmp/*
 .ruff_cache/
 
 # Database
-databases/
+databases/*
 
 # Unit test / coverage reports
 htmlcov/
@@ -64,7 +64,6 @@ wheels/
 *.egg
 
 results/
-databases/
 *.db
 
 wandb/
