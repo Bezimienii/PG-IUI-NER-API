@@ -17,9 +17,12 @@ pip-delete-this-directory.txt
 
 # Downloaded models, tokenizers, datasets
 models/*
+!models/.gitkeep
 tokenizers/
 results/
 tmp/*
+!tmp/.gitkeep
+!databases/.gitkeep
 .ruff_cache/
 
 # Database
