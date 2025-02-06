@@ -22,11 +22,12 @@ tokenizers/
 results/
 tmp/*
 !tmp/.gitkeep
-!databases/.gitkeep
 .ruff_cache/
 
 # Database
 databases/*
+!databases/.gitkeep
+
 
 # Unit test / coverage reports
 htmlcov/
