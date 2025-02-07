@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 
 import numpy as np
-from fastapi import APIRouter, Form, HTTPException, UploadFile, Depends
+from fastapi import APIRouter, Form, HTTPException, UploadFile, Depends, Body, File
 from pydantic import BaseModel
 from transformers import pipeline
 
@@ -42,19 +42,25 @@ def save_file(file: UploadFile, name: str) -> str:
 
     return file_path
 
+
+def get_train_params(
+    model_name: str = Form(...),
+    base_model: int = Form(...)
+):
+    return {"model_name": model_name, "base_model": base_model}
+
 @router.post('/train', summary='Train a model')
 def train_model(
-    model_name: str = Form(...),
-    base_model: int = Form(...),
-    train_data: UploadFile = Form(...),
-    valid_data: UploadFile = Form(...),
-    test_data: UploadFile = Form(...)
+    params: dict = Depends(get_train_params),
+    train_data: UploadFile = File(...),
+    valid_data: UploadFile = File(...),
+    test_data: UploadFile = File(...)
 ):
     """Initiates the training process for a Named-Entity Recognition (NER) model.
 
     **Args**:
     - **model_name** (str): The name of the model to be trained.
-    - **model_language** (str): The language for the model (e.g., "en", "pl").
+    - **base_model** (int): The base model ID.
     - **train_data** (UploadFile): The training data for the model.
     - **valid_data** (UploadFile): The validation data for the model.
     - **test_data** (UploadFile): The test data for the model.
@@ -62,24 +68,24 @@ def train_model(
     **Returns**:
     - **dict**: A dictionary confirming the successful initiation of the training process with the following structure:
         ```json
-            {
-                "message": "Successfully loaded model.",
-                "model_name": "<model_name>"
-            }
+        {
+            "message": "Successfully loaded model.",
+            "model_name": "<model_name>"
+        }
         ```
 
     **Raises**:
     - **HTTPException (400)**: If a model with the provided name already exists.
     """
     with Session() as db:
-        existing_model = get_model_by_model_name(db, model_name)
+        existing_model = get_model_by_model_name(db, params["model_name"])
         if existing_model:
             return {
                 "message": "Model with the given name already exists.",
-                "model_name": model_name,
+                "model_name": params["model_name"],
                 "is_trained": existing_model.is_trained
             }
-        model_info = get_model(db, base_model)
+        model_info = get_model(db, params["base_model"])
 
     files_uuid = uuid.uuid4()
     train_path = save_file(train_data, f'train_{files_uuid}')
@@ -89,8 +95,8 @@ def train_model(
     create_model(
         session=db,
         base_model=model_info.model_name,
-        file_path = f'{settings.MODEL_PATH}/{model_name}',
-        model_name=model_name,
+        file_path=f'{settings.MODEL_PATH}/{params["model_name"]}',
+        model_name=params["model_name"],
         train_file_path=train_path,
         valid_file_path=valid_path,
         test_file_path=test_path,
@@ -100,8 +106,7 @@ def train_model(
         date_created=datetime.now(),
     )
 
-    return {'message': 'Successfully loaded model.', 'model_name': model_name}
-
+    return {'message': 'Successfully loaded model.', 'model_name': params["model_name"]}
 
 # ----------------- NER -----------------
 
